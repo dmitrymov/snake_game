@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/game_viewmodel.dart';
 import '../models/direction.dart';
@@ -19,6 +20,8 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   final FocusNode _focusNode = FocusNode();
+
+  bool get _isAndroid => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   @override
   void initState() {
@@ -66,8 +69,15 @@ class _GameScreenState extends State<GameScreen> {
                       
                       const SizedBox(height: 20),
                       
-                      // Game board
-                      Center(child: const GameBoard()),
+                      // Game board (swipe to change direction on Android)
+                      Center(
+                        child: _isAndroid
+                            ? GestureDetector(
+                                onPanEnd: _handleSwipe,
+                                child: const GameBoard(),
+                              )
+                            : const GameBoard(),
+                      ),
                       
                       const SizedBox(height: 20),
                       
@@ -76,8 +86,8 @@ class _GameScreenState extends State<GameScreen> {
                       
                       const SizedBox(height: 20),
                       
-                      // Game controls
-                      const GameControls(),
+                      // Game controls (hidden on Android; use swipe gestures instead)
+                      if (!_isAndroid) const GameControls(),
                       
                       const SizedBox(height: 16),
                       
@@ -88,10 +98,12 @@ class _GameScreenState extends State<GameScreen> {
                           color: Colors.blue[50],
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'Use arrow keys or buttons to control the snake\\nEat red food to grow and increase your score!',
+                        child: Text(
+                          _isAndroid
+                              ? 'Swipe anywhere on the board to change direction\nEat red food to grow and increase your score!'
+                              : 'Use arrow keys or buttons to control the snake\nEat red food to grow and increase your score!',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 14,
                             color: Colors.blue,
                           ),
@@ -112,6 +124,25 @@ class _GameScreenState extends State<GameScreen> {
         ],
       ),
     );
+  }
+
+  void _handleSwipe(DragEndDetails details) {
+    final velocity = details.velocity.pixelsPerSecond;
+    if (velocity.dx.abs() > velocity.dy.abs()) {
+      // Horizontal swipe
+      if (velocity.dx > 0) {
+        Provider.of<GameViewModel>(context, listen: false).changeDirection(Direction.right);
+      } else {
+        Provider.of<GameViewModel>(context, listen: false).changeDirection(Direction.left);
+      }
+    } else {
+      // Vertical swipe
+      if (velocity.dy > 0) {
+        Provider.of<GameViewModel>(context, listen: false).changeDirection(Direction.down);
+      } else {
+        Provider.of<GameViewModel>(context, listen: false).changeDirection(Direction.up);
+      }
+    }
   }
 
   /// Handles keyboard input for snake direction control
