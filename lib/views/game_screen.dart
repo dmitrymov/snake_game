@@ -43,10 +43,10 @@ class _GameScreenState extends State<GameScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          'Snake Game',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        // title: const Text(
+        //   'Snake Game',
+        //   style: TextStyle(fontWeight: FontWeight.bold),
+        // ),
         backgroundColor: Colors.green[700],
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -64,8 +64,6 @@ class _GameScreenState extends State<GameScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Game information display
-                      const GameInfo(),
                       
                       const SizedBox(height: 20),
                       
@@ -90,7 +88,8 @@ class _GameScreenState extends State<GameScreen> {
                       if (!_isAndroid) const GameControls(),
                       
                       const SizedBox(height: 16),
-                      
+                                            // Game information display
+                      const GameInfo(),
                       // Instructions
                       Container(
                         padding: const EdgeInsets.all(12),
