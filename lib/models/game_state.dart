@@ -21,7 +21,9 @@ class GameState {
   final GameStatus status;
   final int boardWidth;
   final int boardHeight;
-  final int gameSpeed; // milliseconds between moves
+  final int baseSpeed; // starting/base speed in ms
+  final bool wrapAround; // whether snake wraps at edges
+  final int gameSpeed; // current speed in ms between moves
 
   const GameState({
     required this.snake,
@@ -31,6 +33,8 @@ class GameState {
     this.status = GameStatus.ready,
     this.boardWidth = 20,
     this.boardHeight = 20,
+    this.baseSpeed = 200,
+    this.wrapAround = true,
     this.gameSpeed = 200,
   });
 
@@ -40,6 +44,8 @@ class GameState {
     int boardHeight = 20,
     int gameSpeed = 200,
     int highScore = 0,
+    int baseSpeed = 200,
+    bool wrapAround = true,
   }) {
     return GameState(
       snake: Snake.initial(
@@ -48,6 +54,8 @@ class GameState {
       ),
       boardWidth: boardWidth,
       boardHeight: boardHeight,
+      baseSpeed: baseSpeed,
+      wrapAround: wrapAround,
       gameSpeed: gameSpeed,
       highScore: highScore,
     );
@@ -63,6 +71,8 @@ class GameState {
     GameStatus? status,
     int? boardWidth,
     int? boardHeight,
+    int? baseSpeed,
+    bool? wrapAround,
     int? gameSpeed,
   }) {
     return GameState(
@@ -73,6 +83,8 @@ class GameState {
       status: status ?? this.status,
       boardWidth: boardWidth ?? this.boardWidth,
       boardHeight: boardHeight ?? this.boardHeight,
+      baseSpeed: baseSpeed ?? this.baseSpeed,
+      wrapAround: wrapAround ?? this.wrapAround,
       gameSpeed: gameSpeed ?? this.gameSpeed,
     );
   }
@@ -109,6 +121,8 @@ class GameState {
           status == other.status &&
           boardWidth == other.boardWidth &&
           boardHeight == other.boardHeight &&
+          baseSpeed == other.baseSpeed &&
+          wrapAround == other.wrapAround &&
           gameSpeed == other.gameSpeed;
 
   @override
@@ -120,8 +134,10 @@ class GameState {
       status.hashCode ^
       boardWidth.hashCode ^
       boardHeight.hashCode ^
+      baseSpeed.hashCode ^
+      wrapAround.hashCode ^
       gameSpeed.hashCode;
 
   @override
-  String toString() => 'GameState(snake: $snake, food: $food, score: $score, highScore: $highScore, status: $status)';
+  String toString() => 'GameState(snake: $snake, food: $food, score: $score, highScore: $highScore, status: $status, baseSpeed: $baseSpeed, wrapAround: $wrapAround)';
 }

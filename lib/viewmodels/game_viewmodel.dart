@@ -2,19 +2,23 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/game_state.dart';
 import '../models/direction.dart';
+import '../models/game_settings.dart';
 import '../services/game_service.dart';
 import '../services/high_score_service.dart';
+import '../services/settings_service.dart';
 
 /// ViewModel that manages the Snake game state and business logic
 class GameViewModel extends ChangeNotifier {
   final GameService _gameService = GameService();
   final HighScoreService _highScoreService = HighScoreService();
+  final SettingsService _settingsService = SettingsService();
   
   GameState _gameState = GameState.initial();
   Timer? _gameTimer;
 
   GameViewModel() {
     _loadHighScore();
+    _loadSettings();
   }
 
   /// Current game state (read-only access)
@@ -36,8 +40,10 @@ class GameViewModel extends ChangeNotifier {
     _gameState = GameState.initial(
       boardWidth: _gameState.boardWidth,
       boardHeight: _gameState.boardHeight,
-      gameSpeed: _gameState.gameSpeed,
+      gameSpeed: _gameState.baseSpeed,
       highScore: _gameState.highScore,
+      baseSpeed: _gameState.baseSpeed,
+      wrapAround: _gameState.wrapAround,
     ).copyWith(status: GameStatus.playing);
     _generateFood();
     _startGameTimer();
@@ -76,8 +82,25 @@ class GameViewModel extends ChangeNotifier {
     _gameState = GameState.initial(
       boardWidth: _gameState.boardWidth,
       boardHeight: _gameState.boardHeight,
-      gameSpeed: _gameState.gameSpeed,
+      gameSpeed: _gameState.baseSpeed,
       highScore: _gameState.highScore,
+      baseSpeed: _gameState.baseSpeed,
+      wrapAround: _gameState.wrapAround,
+    );
+    notifyListeners();
+  }
+
+  /// Apply settings and reset to ready state (preserves high score)
+  Future<void> applySettings(GameSettings settings) async {
+    _stopGameTimer();
+    await _settingsService.saveSettings(settings);
+    _gameState = GameState.initial(
+      boardWidth: settings.boardWidth,
+      boardHeight: settings.boardHeight,
+      gameSpeed: settings.baseSpeed,
+      highScore: _gameState.highScore,
+      baseSpeed: settings.baseSpeed,
+      wrapAround: settings.wrapAround,
     );
     notifyListeners();
   }
@@ -99,12 +122,23 @@ class GameViewModel extends ChangeNotifier {
     var newScore = _gameState.score;
     var newFood = _gameState.food;
 
-    // Check if snake will eat food
-    final nextHeadPosition = newSnake.head
-        .move(newSnake.direction)
-        .wrap(_gameState.boardWidth, _gameState.boardHeight);
+    // Determine next head position depending on wrap setting
+    var nextHeadPosition = newSnake.head.move(newSnake.direction);
+    if (_gameState.wrapAround) {
+      nextHeadPosition = nextHeadPosition.wrap(_gameState.boardWidth, _gameState.boardHeight);
+    } else {
+      // If out of bounds, it's a wall collision -> game over
+      if (nextHeadPosition.x < 0 ||
+          nextHeadPosition.y < 0 ||
+          nextHeadPosition.x >= _gameState.boardWidth ||
+          nextHeadPosition.y >= _gameState.boardHeight) {
+        endGame();
+        return;
+      }
+    }
 
-    bool willEatFood = newFood != null && nextHeadPosition == newFood.position;
+    // Check if snake will eat food
+    final bool willEatFood = newFood != null && nextHeadPosition == newFood.position;
 
     if (willEatFood) {
       // Snake grows and score increases
@@ -162,7 +196,7 @@ class GameViewModel extends ChangeNotifier {
 
   /// Updates the game speed based on current score
   void _updateGameSpeed() {
-    final newSpeed = _gameService.calculateGameSpeed(_gameState.score, 200);
+    final newSpeed = _gameService.calculateGameSpeed(_gameState.score, _gameState.baseSpeed);
     if (newSpeed != _gameState.gameSpeed) {
       _gameState = _gameState.copyWith(gameSpeed: newSpeed);
       _restartGameTimer();
@@ -194,6 +228,19 @@ class GameViewModel extends ChangeNotifier {
   Future<void> _loadHighScore() async {
     final hs = await _highScoreService.getHighScore();
     _gameState = _gameState.copyWith(highScore: hs);
+    notifyListeners();
+  }
+
+  Future<void> _loadSettings() async {
+    final s = await _settingsService.getSettings();
+    _gameState = GameState.initial(
+      boardWidth: s.boardWidth,
+      boardHeight: s.boardHeight,
+      gameSpeed: s.baseSpeed,
+      highScore: _gameState.highScore,
+      baseSpeed: s.baseSpeed,
+      wrapAround: s.wrapAround,
+    );
     notifyListeners();
   }
 

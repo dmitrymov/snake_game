@@ -9,6 +9,7 @@ import 'widgets/game_info.dart';
 import 'widgets/game_actions.dart';
 import 'widgets/game_controls.dart';
 import 'widgets/game_over_overlay.dart';
+import 'settings_screen.dart';
 
 /// Main game screen that orchestrates all game components
 class GameScreen extends StatefulWidget {
@@ -43,13 +44,24 @@ class _GameScreenState extends State<GameScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        // title: const Text(
-        //   'Snake Game',
-        //   style: TextStyle(fontWeight: FontWeight.bold),
-        // ),
+        title: const Text(
+          'Snake Game',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.green[700],
         foregroundColor: Colors.white,
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [

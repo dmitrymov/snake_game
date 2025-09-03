@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'viewmodels/game_viewmodel.dart';
+import 'viewmodels/settings_viewmodel.dart';
 import 'views/game_screen.dart';
 
 void main() {
@@ -12,8 +13,11 @@ class SnakeGameApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => GameViewModel(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SettingsViewModel()..load()),
+        ChangeNotifierProvider(create: (_) => GameViewModel()),
+      ],
       child: MaterialApp(
         title: 'Snake Game',
         theme: ThemeData(
