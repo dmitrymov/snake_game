@@ -52,6 +52,9 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
+  # Generate Android app launcher icons from a single source image
+  flutter_launcher_icons: ^0.13.1
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -93,3 +96,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/snake_logo.png"
+  # Uncomment the following for adaptive icons on Android 8.0+
+  # adaptive_icon_background: "#FFFFFF"
+  # adaptive_icon_foreground: "assets/snake_logo.png"
