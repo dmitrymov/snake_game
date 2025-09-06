@@ -93,18 +93,36 @@ class GameBoard extends StatelessWidget {
     );
   }
 
-  /// Builds a food widget
+  /// Builds a food widget with spawn animation
   Widget _buildFood(Position position, double cellSize) {
     return Positioned(
       left: position.x * cellSize,
       top: position.y * cellSize,
-      child: Container(
-        width: cellSize,
-        height: cellSize,
-        margin: const EdgeInsets.all(2),
-        decoration: const BoxDecoration(
-          color: Colors.red,
-          shape: BoxShape.circle,
+      child: TweenAnimationBuilder<double>(
+        key: ValueKey('food_${position.x}_${position.y}'),
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutBack,
+        builder: (context, value, child) {
+          return Opacity(
+            opacity: value.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: value.clamp(0.0, 1.0),
+              child: child,
+            ),
+          );
+        },
+        child: Container(
+          width: cellSize,
+          height: cellSize,
+          margin: const EdgeInsets.all(2),
+          decoration: const BoxDecoration(
+            color: Colors.red,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Colors.redAccent, blurRadius: 6, spreadRadius: 0.5),
+            ],
+          ),
         ),
       ),
     );

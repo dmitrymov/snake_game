@@ -70,14 +70,30 @@ class GameInfo extends StatelessWidget {
             color: Colors.grey,
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: color,
+        // Animate score value changes for feedback
+        if (label == 'Score')
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+            child: Text(
+              value,
+              key: ValueKey(value),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          )
+        else
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
       ],
     );
   }

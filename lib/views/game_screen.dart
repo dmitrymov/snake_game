@@ -126,11 +126,15 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
           ),
-          Consumer<GameViewModel>(
-            builder: (context, vm, _) {
-              if (!vm.isGameOver) return const SizedBox.shrink();
-              return const GameOverOverlay();
-            },
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Consumer<GameViewModel>(
+              builder: (context, vm, _) {
+                return vm.isGameOver
+                    ? const GameOverOverlay(key: ValueKey('gameover'))
+                    : const SizedBox.shrink(key: ValueKey('nogameover'));
+              },
+            ),
           ),
         ],
       ),

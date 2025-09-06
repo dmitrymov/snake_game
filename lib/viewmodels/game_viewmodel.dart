@@ -9,12 +9,14 @@ import '../models/snake.dart';
 import '../services/game_service.dart';
 import '../services/high_score_service.dart';
 import '../services/settings_service.dart';
+import '../services/sound_service.dart';
 
 /// ViewModel that manages the Snake game state and business logic
 class GameViewModel extends ChangeNotifier {
   final GameService _gameService = GameService();
   final HighScoreService _highScoreService = HighScoreService();
   final SettingsService _settingsService = SettingsService();
+  final SoundService _soundService = SoundService();
   
   GameState _gameState = GameState.initial();
   Timer? _gameTimer;
@@ -86,6 +88,7 @@ class GameViewModel extends ChangeNotifier {
   /// Ends the current game
   void endGame() {
     _stopGameTimer();
+    _soundService.playCrash();
     _gameState = _gameState.copyWith(status: GameStatus.gameOver);
     notifyListeners();
   }
@@ -175,6 +178,7 @@ class GameViewModel extends ChangeNotifier {
 
     if (willEatFood) {
       // Snake grows and score increases
+      _soundService.playEat();
       newSnake = newSnake.moveAndGrow(_gameState.boardWidth, _gameState.boardHeight);
       newScore += _gameService.calculateScoreIncrease(newScore, newSnake.length);
       newFood = null; // Food is consumed
