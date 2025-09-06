@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import '../models/game_state.dart';
 import '../models/direction.dart';
@@ -6,6 +7,7 @@ import '../models/game_settings.dart';
 import '../models/difficulty.dart';
 import '../models/position.dart';
 import '../models/snake.dart';
+import '../models/eat_particle.dart';
 import '../services/game_service.dart';
 import '../services/high_score_service.dart';
 import '../services/settings_service.dart';
@@ -36,7 +38,11 @@ class GameViewModel extends ChangeNotifier {
   bool get isReady => _gameState.isReady;
   int get score => _gameState.score;
   int get snakeLength => _gameState.snake.length;
-  int get highScore => _gameState.highScore;
+int get highScore => _gameState.highScore;
+
+  // Transient eat particles for effects
+  final List<EatParticle> _eatParticles = [];
+  List<EatParticle> get eatParticles => List.unmodifiable(_eatParticles);
 
   /// Starts a new game
   void startNewGame() {
@@ -63,6 +69,7 @@ class GameViewModel extends ChangeNotifier {
     ).copyWith(status: GameStatus.playing);
     _generateFood();
     _startGameTimer();
+    _eatParticles.clear();
     
     notifyListeners();
   }
@@ -104,6 +111,7 @@ class GameViewModel extends ChangeNotifier {
       baseSpeed: _gameState.baseSpeed,
       wrapAround: _gameState.wrapAround,
     );
+    _eatParticles.clear();
     notifyListeners();
   }
 
@@ -135,6 +143,7 @@ class GameViewModel extends ChangeNotifier {
       wrapAround: settings.wrapAround,
       obstacles: obstacles,
     );
+    _eatParticles.clear();
     notifyListeners();
   }
 
@@ -182,6 +191,7 @@ class GameViewModel extends ChangeNotifier {
     if (willEatFood) {
       // Snake grows and score increases
       _soundService.playEat();
+      _spawnEatParticles(nextHeadPosition);
       newSnake = newSnake.moveAndGrow(_gameState.boardWidth, _gameState.boardHeight);
       newScore += _gameService.calculateScoreIncrease(newScore, newSnake.length);
       newFood = null; // Food is consumed
@@ -323,6 +333,29 @@ class GameViewModel extends ChangeNotifier {
     // Ensure there is always enough free space: cap to area - snake length - 5
     final maxAllowed = area - _gameState.snake.length - 5;
     return raw.clamp(0, maxAllowed);
+  }
+
+  void _spawnEatParticles(Position origin) {
+    final rng = math.Random();
+    const count = 8;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (int i = 0; i < count; i++) {
+      final angle = rng.nextDouble() * math.pi * 2;
+      final p = EatParticle(
+        id: '${DateTime.now().microsecondsSinceEpoch}_$i',
+        origin: origin,
+        angle: angle,
+        isRed: i.isEven,
+        createdAtMs: now,
+      );
+      _eatParticles.add(p);
+      // Schedule removal after 250ms
+      Timer(const Duration(milliseconds: 250), () {
+        _eatParticles.removeWhere((e) => e.id == p.id);
+        notifyListeners();
+      });
+    }
+    notifyListeners();
   }
 
   @override

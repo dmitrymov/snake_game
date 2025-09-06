@@ -44,6 +44,9 @@ dependencies:
   # Sound effects
   audioplayers: ^5.2.1
 
+  # Rendering/game loop utilities
+  flame: ^1.13.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
