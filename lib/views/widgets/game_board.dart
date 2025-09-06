@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/game_viewmodel.dart';
 import '../../models/position.dart';
+import '../../models/direction.dart';
 
 /// Widget that renders the Snake game board
 class GameBoard extends StatelessWidget {
@@ -37,6 +38,14 @@ class GameBoard extends StatelessWidget {
                 // Render food
                 if (gameState.food != null)
                   _buildFood(gameState.food!.position, cellSize),
+
+                // Head overlay (eyes, tongue)
+                _buildHeadOverlay(
+                  head: gameState.snake.head,
+                  cellSize: cellSize,
+                  direction: gameState.snake.direction,
+                  showTongue: gameViewModel.isPlaying,
+                ),
               ],
             ),
           ),
@@ -126,5 +135,102 @@ class GameBoard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Overlay painter for the head (eyes, tongue)
+  Widget _buildHeadOverlay({
+    required Position head,
+    required double cellSize,
+    required Direction direction,
+    required bool showTongue,
+  }) {
+    return Positioned(
+      left: head.x * cellSize,
+      top: head.y * cellSize,
+      child: SizedBox(
+        width: cellSize,
+        height: cellSize,
+        child: CustomPaint(
+          painter: _HeadDetailPainter(direction: direction, showTongue: showTongue),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeadDetailPainter extends CustomPainter {
+  _HeadDetailPainter({required this.direction, required this.showTongue});
+
+  final Direction direction;
+  final bool showTongue;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cell = size.shortestSide;
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // Compute forward vector based on direction
+    Offset forward;
+    Offset right;
+    switch (direction) {
+      case Direction.up:
+        forward = const Offset(0, -1);
+        right = const Offset(1, 0);
+        break;
+      case Direction.down:
+        forward = const Offset(0, 1);
+        right = const Offset(-1, 0);
+        break;
+      case Direction.left:
+        forward = const Offset(-1, 0);
+        right = const Offset(0, -1);
+        break;
+      case Direction.right:
+        forward = const Offset(1, 0);
+        right = const Offset(0, 1);
+        break;
+    }
+
+    // Eyes positions toward the facing side
+    final eyeOffsetForward = cell * 0.20;
+    final eyeOffsetLateral = cell * 0.16;
+    final eyeRadius = cell * 0.10;
+    final pupilRadius = cell * 0.05;
+
+    final eyeCenter1 = center + forward * eyeOffsetForward + right * eyeOffsetLateral;
+    final eyeCenter2 = center + forward * eyeOffsetForward - right * eyeOffsetLateral;
+
+    final eyePaint = Paint()..color = const Color(0xFFFFFFFF);
+    final pupilPaint = Paint()..color = const Color(0xFF000000);
+
+    canvas.drawCircle(eyeCenter1, eyeRadius, eyePaint);
+    canvas.drawCircle(eyeCenter2, eyeRadius, eyePaint);
+
+    // Pupils offset slightly more in forward direction
+    final pupilForwardOffset = cell * 0.05;
+    canvas.drawCircle(eyeCenter1 + forward * pupilForwardOffset, pupilRadius, pupilPaint);
+    canvas.drawCircle(eyeCenter2 + forward * pupilForwardOffset, pupilRadius, pupilPaint);
+
+    // Tongue - small triangle pointing forward
+    if (showTongue) {
+      final tongueLength = cell * 0.18;
+      final tongueWidth = cell * 0.12;
+      final tip = center + forward * (cell * 0.5);
+      final baseLeft = tip - forward * tongueLength + right * (tongueWidth / 2);
+      final baseRight = tip - forward * tongueLength - right * (tongueWidth / 2);
+
+      final tonguePath = Path()
+        ..moveTo(tip.dx, tip.dy)
+        ..lineTo(baseLeft.dx, baseLeft.dy)
+        ..lineTo(baseRight.dx, baseRight.dy)
+        ..close();
+      final tonguePaint = Paint()..color = const Color(0xFFE53935);
+      canvas.drawPath(tonguePath, tonguePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HeadDetailPainter oldDelegate) {
+    return oldDelegate.direction != direction || oldDelegate.showTongue != showTongue;
   }
 }
