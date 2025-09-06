@@ -109,16 +109,16 @@ class _GameScreenState extends State<GameScreen> {
                           color: Colors.blue[50],
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          _isAndroid
-                              ? 'Swipe anywhere on the board to change direction\nEat red food to grow and increase your score!'
-                              : 'Use arrow keys or buttons to control the snake\nEat red food to grow and increase your score!',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.blue,
-                          ),
-                        ),
+                        // child: Text(
+                        //   _isAndroid
+                        //       ? 'Swipe anywhere on the board to change direction\nEat red food to grow and increase your score!'
+                        //       : 'Use arrow keys or buttons to control the snake\nEat red food to grow and increase your score!',
+                        //   textAlign: TextAlign.center,
+                        //   style: const TextStyle(
+                        //     fontSize: 14,
+                        //     color: Colors.blue,
+                        //   ),
+                        // ),
                       ),
                     ],
                   ),
