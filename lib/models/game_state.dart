@@ -1,5 +1,6 @@
 import 'snake.dart';
 import 'food.dart';
+import 'position.dart';
 
 // Sentinel used to distinguish between "no change" and "explicit null" in copyWith.
 const Object _unset = Object();
@@ -24,6 +25,7 @@ class GameState {
   final int baseSpeed; // starting/base speed in ms
   final bool wrapAround; // whether snake wraps at edges
   final int gameSpeed; // current speed in ms between moves
+  final Set<Position> obstacles; // cells that are blocked
 
   const GameState({
     required this.snake,
@@ -36,6 +38,7 @@ class GameState {
     this.baseSpeed = 200,
     this.wrapAround = true,
     this.gameSpeed = 200,
+    this.obstacles = const {},
   });
 
   /// Creates an initial game state
@@ -46,6 +49,7 @@ class GameState {
     int highScore = 0,
     int baseSpeed = 200,
     bool wrapAround = true,
+    Set<Position> obstacles = const {},
   }) {
     return GameState(
       snake: Snake.initial(
@@ -58,6 +62,7 @@ class GameState {
       wrapAround: wrapAround,
       gameSpeed: gameSpeed,
       highScore: highScore,
+      obstacles: obstacles,
     );
   }
 
@@ -74,6 +79,7 @@ class GameState {
     int? baseSpeed,
     bool? wrapAround,
     int? gameSpeed,
+    Set<Position>? obstacles,
   }) {
     return GameState(
       snake: snake ?? this.snake,
@@ -86,6 +92,7 @@ class GameState {
       baseSpeed: baseSpeed ?? this.baseSpeed,
       wrapAround: wrapAround ?? this.wrapAround,
       gameSpeed: gameSpeed ?? this.gameSpeed,
+      obstacles: obstacles ?? this.obstacles,
     );
   }
 
@@ -123,7 +130,8 @@ class GameState {
           boardHeight == other.boardHeight &&
           baseSpeed == other.baseSpeed &&
           wrapAround == other.wrapAround &&
-          gameSpeed == other.gameSpeed;
+          gameSpeed == other.gameSpeed &&
+          _setEquals(obstacles, other.obstacles);
 
   @override
   int get hashCode =>
@@ -136,8 +144,18 @@ class GameState {
       boardHeight.hashCode ^
       baseSpeed.hashCode ^
       wrapAround.hashCode ^
-      gameSpeed.hashCode;
+      gameSpeed.hashCode ^
+      obstacles.hashCode;
 
   @override
-  String toString() => 'GameState(snake: $snake, food: $food, score: $score, highScore: $highScore, status: $status, baseSpeed: $baseSpeed, wrapAround: $wrapAround)';
+  String toString() => 'GameState(snake: $snake, food: $food, score: $score, highScore: $highScore, status: $status, baseSpeed: $baseSpeed, wrapAround: $wrapAround, obstacles: ${obstacles.length})';
+}
+
+bool _setEquals<T>(Set<T> a, Set<T> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (final e in a) {
+    if (!b.contains(e)) return false;
+  }
+  return true;
 }

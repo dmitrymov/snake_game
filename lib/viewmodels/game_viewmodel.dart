@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 import '../models/game_state.dart';
 import '../models/direction.dart';
 import '../models/game_settings.dart';
+import '../models/difficulty.dart';
+import '../models/position.dart';
+import '../models/snake.dart';
 import '../services/game_service.dart';
 import '../services/high_score_service.dart';
 import '../services/settings_service.dart';
@@ -36,6 +39,16 @@ class GameViewModel extends ChangeNotifier {
   /// Starts a new game
   void startNewGame() {
     _stopGameTimer();
+
+    // Generate obstacles based on difficulty and board size
+    final difficulty = _deriveDifficulty();
+    final obstacleCount = _computeObstacleCount(difficulty);
+    final obstacles = _gameService.generateObstacles(
+      Snake.initial(boardWidth: _gameState.boardWidth, boardHeight: _gameState.boardHeight),
+      _gameState.boardWidth,
+      _gameState.boardHeight,
+      count: obstacleCount,
+    );
     
     _gameState = GameState.initial(
       boardWidth: _gameState.boardWidth,
@@ -44,6 +57,7 @@ class GameViewModel extends ChangeNotifier {
       highScore: _gameState.highScore,
       baseSpeed: _gameState.baseSpeed,
       wrapAround: _gameState.wrapAround,
+      obstacles: obstacles,
     ).copyWith(status: GameStatus.playing);
     _generateFood();
     _startGameTimer();
@@ -94,6 +108,18 @@ class GameViewModel extends ChangeNotifier {
   Future<void> applySettings(GameSettings settings) async {
     _stopGameTimer();
     await _settingsService.saveSettings(settings);
+
+    // Pre-generate obstacles to visualize density for new settings
+    final difficulty = settings.difficulty;
+    final obstacleCount = _computeObstacleCount(difficulty, width: settings.boardWidth, height: settings.boardHeight);
+    final initialSnake = Snake.initial(boardWidth: settings.boardWidth, boardHeight: settings.boardHeight);
+    final obstacles = _gameService.generateObstacles(
+      initialSnake,
+      settings.boardWidth,
+      settings.boardHeight,
+      count: obstacleCount,
+    );
+
     _gameState = GameState.initial(
       boardWidth: settings.boardWidth,
       boardHeight: settings.boardHeight,
@@ -101,6 +127,7 @@ class GameViewModel extends ChangeNotifier {
       highScore: _gameState.highScore,
       baseSpeed: settings.baseSpeed,
       wrapAround: settings.wrapAround,
+      obstacles: obstacles,
     );
     notifyListeners();
   }
@@ -135,6 +162,12 @@ class GameViewModel extends ChangeNotifier {
         endGame();
         return;
       }
+    }
+
+    // Collision with obstacle -> game over
+    if (_gameState.obstacles.contains(nextHeadPosition)) {
+      endGame();
+      return;
     }
 
     // Check if snake will eat food
@@ -190,13 +223,15 @@ class GameViewModel extends ChangeNotifier {
       _gameState.snake,
       _gameState.boardWidth,
       _gameState.boardHeight,
+      blocked: _gameState.obstacles,
     );
     _gameState = _gameState.copyWith(food: food);
   }
 
   /// Updates the game speed based on current score
   void _updateGameSpeed() {
-    final newSpeed = _gameService.calculateGameSpeed(_gameState.score, _gameState.baseSpeed);
+    final difficulty = _deriveDifficulty();
+    final newSpeed = _gameService.calculateGameSpeed(_gameState.score, _gameState.baseSpeed, difficulty);
     if (newSpeed != _gameState.gameSpeed) {
       _gameState = _gameState.copyWith(gameSpeed: newSpeed);
       _restartGameTimer();
@@ -233,6 +268,18 @@ class GameViewModel extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     final s = await _settingsService.getSettings();
+
+    // Pre-generate obstacles using loaded settings
+    final difficulty = s.difficulty;
+    final obstacleCount = _computeObstacleCount(difficulty, width: s.boardWidth, height: s.boardHeight);
+    final initialSnake = Snake.initial(boardWidth: s.boardWidth, boardHeight: s.boardHeight);
+    final obstacles = _gameService.generateObstacles(
+      initialSnake,
+      s.boardWidth,
+      s.boardHeight,
+      count: obstacleCount,
+    );
+
     _gameState = GameState.initial(
       boardWidth: s.boardWidth,
       boardHeight: s.boardHeight,
@@ -240,8 +287,32 @@ class GameViewModel extends ChangeNotifier {
       highScore: _gameState.highScore,
       baseSpeed: s.baseSpeed,
       wrapAround: s.wrapAround,
+      obstacles: obstacles,
     );
     notifyListeners();
+  }
+
+  Difficulty _deriveDifficulty() {
+    // We infer difficulty from settings by comparing baseSpeed and wrapAround is not relevant.
+    // Since GameState does not store difficulty explicitly, read current persisted settings again would be heavy.
+    // Instead, approximate by using SettingsService.getSettings? But that is async.
+    // We'll assume the last applied settings are represented by baseSpeed and that _loadSettings/applySettings used s.difficulty.
+    // To keep it simple, map baseSpeed to nearest preset when computing speed & obstacles.
+    final base = _gameState.baseSpeed;
+    if (base <= Difficulty.hard.suggestedBaseSpeed) return Difficulty.hard;
+    if (base >= Difficulty.easy.suggestedBaseSpeed) return Difficulty.easy;
+    return Difficulty.normal;
+  }
+
+  int _computeObstacleCount(Difficulty difficulty, {int? width, int? height}) {
+    final w = width ?? _gameState.boardWidth;
+    final h = height ?? _gameState.boardHeight;
+    final area = w * h;
+    final density = difficulty.obstacleDensity;
+    final raw = (area * density).round();
+    // Ensure there is always enough free space: cap to area - snake length - 5
+    final maxAllowed = area - _gameState.snake.length - 5;
+    return raw.clamp(0, maxAllowed);
   }
 
   @override

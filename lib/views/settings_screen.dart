@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/game_viewmodel.dart';
+import '../models/difficulty.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -21,6 +22,24 @@ class SettingsScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // Difficulty selector
+              DropdownButtonFormField<Difficulty>(
+                decoration: const InputDecoration(
+                  labelText: 'Difficulty',
+                  border: OutlineInputBorder(),
+                ),
+                value: s.difficulty,
+                items: const [
+                  DropdownMenuItem(value: Difficulty.easy, child: Text('Easy')),
+                  DropdownMenuItem(value: Difficulty.normal, child: Text('Normal')),
+                  DropdownMenuItem(value: Difficulty.hard, child: Text('Hard')),
+                ],
+                onChanged: (value) {
+                  if (value != null) vm.setDifficulty(value);
+                },
+              ),
+              const SizedBox(height: 16),
+
               Text('Board Width: ${s.boardWidth}'),
               Slider(
                 min: 10,
@@ -64,7 +83,6 @@ class SettingsScreen extends StatelessWidget {
                       await vm.save();
                       if (!context.mounted) return;
                       // Apply settings to game
-                      // Reset game to ready with new config
                       final gameVm = context.read<GameViewModel>();
                       await gameVm.applySettings(vm.settings);
                       if (context.mounted) Navigator.of(context).pop();

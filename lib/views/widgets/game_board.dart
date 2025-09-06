@@ -24,13 +24,16 @@ class GameBoard extends StatelessWidget {
             height: cellSize * gameState.boardHeight,
             child: Stack(
               children: [
+                // Render obstacles first (under snake)
+                ...gameState.obstacles.map((pos) => _buildObstacle(pos, cellSize)),
+
                 // Render snake body
                 ...gameState.snake.body.map((position) => _buildSnakeSegment(
-                  position,
-                  cellSize,
-                  isHead: position == gameState.snake.head,
-                )),
-                
+                      position,
+                      cellSize,
+                      isHead: position == gameState.snake.head,
+                    )),
+
                 // Render food
                 if (gameState.food != null)
                   _buildFood(gameState.food!.position, cellSize),
@@ -47,11 +50,29 @@ class GameBoard extends StatelessWidget {
     final screenSize = MediaQuery.of(context).size;
     final maxWidth = screenSize.width * 0.9;
     final maxHeight = screenSize.height * 0.6;
-    
+
     final cellWidth = maxWidth / boardWidth;
     final cellHeight = maxHeight / boardHeight;
-    
+
     return (cellWidth < cellHeight ? cellWidth : cellHeight).floorToDouble();
+  }
+
+  /// Builds an obstacle cell
+  Widget _buildObstacle(Position position, double cellSize) {
+    return Positioned(
+      left: position.x * cellSize,
+      top: position.y * cellSize,
+      child: Container(
+        width: cellSize,
+        height: cellSize,
+        margin: const EdgeInsets.all(1),
+        decoration: BoxDecoration(
+          color: Colors.grey[800],
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(color: Colors.grey[600]!),
+        ),
+      ),
+    );
   }
 
   /// Builds a snake segment widget

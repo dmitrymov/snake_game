@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/game_settings.dart';
+import '../models/difficulty.dart';
 import '../services/settings_service.dart';
 
 class SettingsViewModel extends ChangeNotifier {
@@ -39,6 +40,19 @@ class SettingsViewModel extends ChangeNotifier {
 
   void setWrapAround(bool value) {
     _settings = _settings.copyWith(wrapAround: value);
+    notifyListeners();
+  }
+
+  void setDifficulty(Difficulty value) {
+    // When changing difficulty, optionally update base speed to the suggested value
+    // but keep user override if they changed base speed manually afterwards.
+    _settings = _settings.copyWith(
+      difficulty: value,
+      // If current base speed equals previous suggestion, snap to new suggestion.
+      baseSpeed: _settings.baseSpeed == _settings.difficulty.suggestedBaseSpeed
+          ? value.suggestedBaseSpeed
+          : _settings.baseSpeed,
+    );
     notifyListeners();
   }
 
