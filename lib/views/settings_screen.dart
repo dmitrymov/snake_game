@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/game_viewmodel.dart';
 import '../models/difficulty.dart';
+import '../models/app_theme_mode.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -22,6 +23,32 @@ class SettingsScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // Theme mode selector
+              DropdownButtonFormField<AppThemeMode>(
+                decoration: const InputDecoration(
+                  labelText: 'Theme',
+                  border: OutlineInputBorder(),
+                ),
+                value: s.themeMode,
+                items: const [
+                  DropdownMenuItem(value: AppThemeMode.system, child: Text('System')),
+                  DropdownMenuItem(value: AppThemeMode.light, child: Text('Light')),
+                  DropdownMenuItem(value: AppThemeMode.dark, child: Text('Dark')),
+                ],
+                onChanged: (value) {
+                  if (value != null) vm.setThemeMode(value);
+                },
+              ),
+              const SizedBox(height: 8),
+
+              // Sound effects toggle
+              SwitchListTile(
+                title: const Text('Sound effects'),
+                value: s.soundEnabled,
+                onChanged: vm.setSoundEnabled,
+              ),
+              const SizedBox(height: 16),
+
               // Difficulty selector
               DropdownButtonFormField<Difficulty>(
                 decoration: const InputDecoration(

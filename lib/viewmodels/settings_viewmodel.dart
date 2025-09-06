@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/game_settings.dart';
 import '../models/difficulty.dart';
+import '../models/app_theme_mode.dart';
 import '../services/settings_service.dart';
 
 class SettingsViewModel extends ChangeNotifier {
@@ -40,6 +41,16 @@ class SettingsViewModel extends ChangeNotifier {
 
   void setWrapAround(bool value) {
     _settings = _settings.copyWith(wrapAround: value);
+    notifyListeners();
+  }
+
+  void setThemeMode(AppThemeMode value) {
+    _settings = _settings.copyWith(themeMode: value);
+    notifyListeners();
+  }
+
+  void setSoundEnabled(bool value) {
+    _settings = _settings.copyWith(soundEnabled: value);
     notifyListeners();
   }
 

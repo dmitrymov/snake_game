@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'viewmodels/game_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'views/game_screen.dart';
+import 'models/app_theme_mode.dart';
 
 void main() {
   runApp(const SnakeGameApp());
@@ -18,14 +19,36 @@ class SnakeGameApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsViewModel()..load()),
         ChangeNotifierProvider(create: (_) => GameViewModel()),
       ],
-      child: MaterialApp(
-        title: 'Snake Game',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-          useMaterial3: true,
-        ),
-        home: const GameScreen(),
-        debugShowCheckedModeBanner: false,
+      child: Consumer<SettingsViewModel>(
+        builder: (context, settingsVm, _) {
+          final lightTheme = ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+            useMaterial3: true,
+            brightness: Brightness.light,
+          );
+          final darkTheme = ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.green, brightness: Brightness.dark),
+            useMaterial3: true,
+            brightness: Brightness.dark,
+          );
+          return MaterialApp(
+            title: 'Snake Game',
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: () {
+              switch (settingsVm.settings.themeMode) {
+                case AppThemeMode.system:
+                  return ThemeMode.system;
+                case AppThemeMode.light:
+                  return ThemeMode.light;
+                case AppThemeMode.dark:
+                  return ThemeMode.dark;
+              }
+            }(),
+            home: const GameScreen(),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

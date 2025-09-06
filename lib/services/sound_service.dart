@@ -5,8 +5,13 @@ import 'package:flutter/services.dart';
 class SoundService {
   final AudioPlayer _eat = AudioPlayer();
   final AudioPlayer _crash = AudioPlayer();
+  bool _enabled = true;
 
-  Future<void> playEat() async {
+  void setEnabled(bool value) {
+    _enabled = value;
+  }
+   Future<void> playEat() async {
+    if (!_enabled) return;
     try {
       await _eat.stop();
       // Attempt to play from assets if provided by the project
@@ -22,6 +27,7 @@ class SoundService {
   }
 
   Future<void> playCrash() async {
+    if (!_enabled) return;
     try {
       await _crash.stop();
       await _crash.play(AssetSource('sfx/crash.wav'));

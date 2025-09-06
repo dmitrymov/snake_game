@@ -112,6 +112,9 @@ class GameViewModel extends ChangeNotifier {
     _stopGameTimer();
     await _settingsService.saveSettings(settings);
 
+    // Update sound toggle
+    _soundService.setEnabled(settings.soundEnabled);
+
     // Pre-generate obstacles to visualize density for new settings
     final difficulty = settings.difficulty;
     final obstacleCount = _computeObstacleCount(difficulty, width: settings.boardWidth, height: settings.boardHeight);
@@ -272,6 +275,9 @@ class GameViewModel extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     final s = await _settingsService.getSettings();
+
+    // Initialize sound toggle
+    _soundService.setEnabled(s.soundEnabled);
 
     // Pre-generate obstacles using loaded settings
     final difficulty = s.difficulty;
