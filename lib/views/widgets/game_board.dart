@@ -102,37 +102,14 @@ class GameBoard extends StatelessWidget {
     );
   }
 
-  /// Builds a food widget with spawn animation
+  /// Builds a food widget with spawn animation and continuous pulse
   Widget _buildFood(Position position, double cellSize) {
     return Positioned(
       left: position.x * cellSize,
       top: position.y * cellSize,
-      child: TweenAnimationBuilder<double>(
+      child: _PulsingFood(
         key: ValueKey('food_${position.x}_${position.y}'),
-        tween: Tween(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutBack,
-        builder: (context, value, child) {
-          return Opacity(
-            opacity: value.clamp(0.0, 1.0),
-            child: Transform.scale(
-              scale: value.clamp(0.0, 1.0),
-              child: child,
-            ),
-          );
-        },
-        child: Container(
-          width: cellSize,
-          height: cellSize,
-          margin: const EdgeInsets.all(2),
-          decoration: const BoxDecoration(
-            color: Colors.red,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: Colors.redAccent, blurRadius: 6, spreadRadius: 0.5),
-            ],
-          ),
-        ),
+        cellSize: cellSize,
       ),
     );
   }
@@ -232,5 +209,69 @@ class _HeadDetailPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _HeadDetailPainter oldDelegate) {
     return oldDelegate.direction != direction || oldDelegate.showTongue != showTongue;
+  }
+}
+
+class _PulsingFood extends StatefulWidget {
+  const _PulsingFood({super.key, required this.cellSize});
+  final double cellSize;
+
+  @override
+  State<_PulsingFood> createState() => _PulsingFoodState();
+}
+
+class _PulsingFoodState extends State<_PulsingFood> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _curve;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
+      ..repeat(reverse: true);
+    _curve = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Spawn animation: 0 -> 1, then pulse around 1.0 with 0.9..1.1 range
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutBack,
+      builder: (context, spawn, _) {
+        return AnimatedBuilder(
+          animation: _curve,
+          builder: (context, __) {
+            final pulse = 0.9 + 0.2 * _curve.value; // 0.9 .. 1.1
+            final scale = (spawn.clamp(0.0, 1.0)) * pulse;
+            return Opacity(
+              opacity: spawn.clamp(0.0, 1.0),
+              child: Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: widget.cellSize,
+                  height: widget.cellSize,
+                  margin: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: Colors.redAccent, blurRadius: 6, spreadRadius: 0.5),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
