@@ -175,6 +175,38 @@ class _GameScreenState extends State<GameScreen> {
               },
             ),
           ),
+
+          // Tap-to-start hint overlay on mobile when ready
+          Consumer<GameViewModel>(
+            builder: (context, vm, _) {
+              if (!_isMobile || !vm.isReady) return const SizedBox.shrink();
+              return Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: true,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.touch_app, color: Colors.white70),
+                          SizedBox(width: 8),
+                          Text(
+                            'Tap to start',
+                            style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
