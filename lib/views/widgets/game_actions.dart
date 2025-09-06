@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/game_viewmodel.dart';
 
@@ -10,13 +11,14 @@ class GameActions extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<GameViewModel>(
       builder: (context, gameViewModel, child) {
+        final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Start/Resume button
-              if (gameViewModel.isReady || gameViewModel.isPaused)
+              // Start/Resume button (hidden on mobile; game starts on tap)
+              if (!isMobile && (gameViewModel.isReady || gameViewModel.isPaused))
                 _buildActionButton(
                   label: gameViewModel.isReady ? 'Start Game' : 'Resume',
                   icon: Icons.play_arrow,
@@ -24,24 +26,6 @@ class GameActions extends StatelessWidget {
                   onPressed: gameViewModel.isReady
                       ? gameViewModel.startNewGame
                       : gameViewModel.resumeGame,
-                ),
-
-              // Pause button
-              if (gameViewModel.isPlaying)
-                _buildActionButton(
-                  label: 'Pause',
-                  icon: Icons.pause,
-                  color: Colors.orange,
-                  onPressed: gameViewModel.pauseGame,
-                ),
-
-              // Reset button
-              if (!gameViewModel.isReady)
-                _buildActionButton(
-                  label: 'Reset',
-                  icon: Icons.refresh,
-                  color: Colors.blue,
-                  onPressed: gameViewModel.resetGame,
                 ),
 
               // New Game button (when game over)

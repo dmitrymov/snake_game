@@ -23,6 +23,7 @@ class _GameScreenState extends State<GameScreen> {
   final FocusNode _focusNode = FocusNode();
 
   bool get _isAndroid => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  bool get _isMobile => !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
 
   @override
   void initState() {
@@ -52,6 +53,44 @@ class _GameScreenState extends State<GameScreen> {
         foregroundColor: Colors.white,
         centerTitle: true,
         actions: [
+          // Dynamic pause/resume and reset controls in the toolbar
+          Consumer<GameViewModel>(
+            builder: (context, vm, _) {
+              final buttons = <Widget>[];
+
+              if (vm.isPlaying) {
+                buttons.add(
+                  IconButton(
+                    tooltip: 'Pause',
+                    icon: const Icon(Icons.pause),
+                    onPressed: vm.pauseGame,
+                  ),
+                );
+              } else if (vm.isPaused) {
+                buttons.add(
+                  IconButton(
+                    tooltip: 'Resume',
+                    icon: const Icon(Icons.play_arrow),
+                    onPressed: vm.resumeGame,
+                  ),
+                );
+              }
+
+              if (!vm.isReady) {
+                buttons.add(
+                  IconButton(
+                    tooltip: 'Reset',
+                    icon: const Icon(Icons.refresh),
+                    onPressed: vm.resetGame,
+                  ),
+                );
+              }
+
+              return Row(mainAxisSize: MainAxisSize.min, children: buttons);
+            },
+          ),
+
+          // Settings action
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
@@ -69,7 +108,7 @@ class _GameScreenState extends State<GameScreen> {
             focusNode: _focusNode,
             onKeyEvent: _handleKeyEvent,
             child: GestureDetector(
-              onTap: () => _focusNode.requestFocus(),
+              onTap: _handleTap,
               child: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -191,5 +230,16 @@ class _GameScreenState extends State<GameScreen> {
     }
     
     return KeyEventResult.ignored;
+  }
+
+  void _handleTap() {
+    // On mobile, start the game on tap when ready
+    final vm = Provider.of<GameViewModel>(context, listen: false);
+    if (_isMobile && vm.isReady) {
+      vm.startNewGame();
+      return;
+    }
+    // Keep keyboard focus for desktop/web
+    _focusNode.requestFocus();
   }
 }
