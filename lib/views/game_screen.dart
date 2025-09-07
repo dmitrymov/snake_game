@@ -96,55 +96,54 @@ class _GameScreenState extends State<GameScreen> {
             onKeyEvent: _handleKeyEvent,
             child: GestureDetector(
               onTap: _handleTap,
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    
 
-                      
-                      // Game board (swipe to change direction on Android)
-                      Center(
-                        child: _isAndroid
-                            ? GestureDetector(
-                                onPanEnd: _handleSwipe,
-                                child: const GameBoard(),
-                              )
-                            : const GameBoard(),
-                      ),
+                    
+                    // Game board (fills available space)
+                    Expanded(
+                      child: _isAndroid
+                          ? GestureDetector(
+                              onPanEnd: _handleSwipe,
+                              child: const GameBoard(),
+                            )
+                          : const GameBoard(),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Game action buttons (below the board)
+                    const GameActions(),
+
+                    const SizedBox(height: 8),
+
+                    // Game controls (hidden on Android; use swipe gestures instead)
+                    if (!_isAndroid) const GameControls(),
 
 
-                      // Game action buttons
-                      const GameActions(),
-
-
-
-                      // Game controls (hidden on Android; use swipe gestures instead)
-                      if (!_isAndroid) const GameControls(),
-
-
-                      // Instructions
-                      // Container(
-                      //   padding: const EdgeInsets.all(12),
-                      //   decoration: BoxDecoration(
-                      //     color: Colors.blue[50],
-                      //     borderRadius: BorderRadius.circular(8),
-                      //   ),
-                      //   // child: Text(
-                      //   //   _isAndroid
-                      //   //       ? 'Swipe anywhere on the board to change direction\nEat red food to grow and increase your score!'
-                      //   //       : 'Use arrow keys or buttons to control the snake\nEat red food to grow and increase your score!',
-                      //   //   textAlign: TextAlign.center,
-                      //   //   style: const TextStyle(
-                      //   //     fontSize: 14,
-                      //   //     color: Colors.blue,
-                      //   //   ),
-                      //   // ),
-                      // ),
-                    ],
-                  ),
+                    // Instructions
+                    // Container(
+                    //   padding: const EdgeInsets.all(12),
+                    //   decoration: BoxDecoration(
+                    //     color: Colors.blue[50],
+                    //     borderRadius: BorderRadius.circular(8),
+                    //   ),
+                    //   // child: Text(
+                    //   //   _isAndroid
+                    //   //       ? 'Swipe anywhere on the board to change direction\nEat red food to grow and increase your score!'
+                    //   //       : 'Use arrow keys or buttons to control the snake\nEat red food to grow and increase your score!',
+                    //   //   textAlign: TextAlign.center,
+                    //   //   style: const TextStyle(
+                    //   //     fontSize: 14,
+                    //   //     color: Colors.blue,
+                    //   //   ),
+                    //   // ),
+                    // ),
+                  ],
                 ),
               ),
             ),

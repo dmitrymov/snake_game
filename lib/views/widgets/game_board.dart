@@ -26,32 +26,22 @@ class _GameBoardState extends State<GameBoard> {
   Widget build(BuildContext context) {
     return Consumer<GameViewModel>(
       builder: (context, vm, _) {
-        final s = vm.gameState;
-        final cellSize = _calculateCellSize(context, s.boardWidth, s.boardHeight);
         return Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey, width: 2),
+            // Full-screen game area background
             color: Colors.black,
           ),
-          child: SizedBox(
-            width: cellSize * s.boardWidth,
-            height: cellSize * s.boardHeight,
-            child: GameWidget(game: _game!),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                child: GameWidget(game: _game!),
+              );
+            },
           ),
         );
       },
     );
-  }
-
-  /// Calculates the appropriate cell size based on screen size
-  double _calculateCellSize(BuildContext context, int boardWidth, int boardHeight) {
-    final screenSize = MediaQuery.of(context).size;
-    final maxWidth = screenSize.width * 0.95;
-    final maxHeight = screenSize.height * 0.88;
-
-    final cellWidth = maxWidth / boardWidth;
-    final cellHeight = maxHeight / boardHeight;
-
-    return (cellWidth < cellHeight ? cellWidth : cellHeight).floorToDouble();
   }
 }

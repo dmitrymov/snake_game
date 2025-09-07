@@ -28,7 +28,17 @@ class SnakeFlameGame extends Game {
     final boardW = cell * s.boardWidth;
     final boardH = cell * s.boardHeight;
 
-    // Clear to black (board background)
+    // Fill entire canvas background
+    final fullBg = Paint()..color = const Color(0xFF000000);
+    canvas.drawRect(Rect.fromLTWH(0, 0, sz.width, sz.height), fullBg);
+
+    // Center the board within the canvas
+    final dx = (sz.width - boardW) / 2.0;
+    final dy = (sz.height - boardH) / 2.0;
+    canvas.save();
+    canvas.translate(dx, dy);
+
+    // Board background area
     final bg = Paint()..color = const Color(0xFF000000);
     canvas.drawRect(Rect.fromLTWH(0, 0, boardW, boardH), bg);
 
@@ -123,6 +133,8 @@ class SnakeFlameGame extends Game {
 
     // Inner shadow for board separation (subtle)
     _drawInnerShadow(canvas, boardW, boardH);
+
+    canvas.restore();
   }
 
   @override
