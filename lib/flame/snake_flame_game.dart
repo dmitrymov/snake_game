@@ -4,8 +4,10 @@ import 'package:flame/game.dart';
 import 'package:flame/text.dart';
 import 'package:vector_math/vector_math.dart' as v;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import '../models/position.dart';
 import '../models/direction.dart';
+import '../models/food.dart';
 import '../viewmodels/game_viewmodel.dart';
 
 class SnakeFlameGame extends Game {
@@ -18,6 +20,10 @@ class SnakeFlameGame extends Game {
   final math.Random _rng = math.Random();
   double _blinkUntil = -1.0; // sec
   double _nextBlinkAt = 2.0; // sec
+
+  // Cached food images
+  final Map<FoodKind, ui.Image?> _foodImgs = {};
+  bool _loadingImages = false;
 
   @override
   void render(Canvas canvas) {
@@ -76,30 +82,46 @@ class SnakeFlameGame extends Game {
 
     // Food (pulse 0.9..1.1 around base)
     if (s.food != null) {
-      final f = s.food!.position;
+      final food = s.food!;
+      final f = food.position;
       final center = Offset((f.x + 0.5) * cell, (f.y + 0.5) * cell);
       final pulse = 0.9 + 0.2 * (0.5 * (1 + math.sin(_time * math.pi * 2 / 1.2)));
       final radius = minC * 0.42 * pulse;
 
-      // Color by food points: golden (>=2), bad (<0), normal (1)
-      final pval = s.food!.points;
-      Color base = const Color(0xFFE53935); // red
-      Color glowC = const Color(0x55E53935);
-      if (pval >= 2) {
-        base = const Color(0xFFFFD54F); // amber
-        glowC = const Color(0x66FFD54F);
-      } else if (pval < 0) {
-        base = const Color(0xFF9E9E9E); // gray
-        glowC = const Color(0x559E9E9E);
+      if (food.kind == FoodKind.bad) {
+        // Draw bad food as gray circle
+        final base = const Color(0xFF9E9E9E);
+        final glowC = const Color(0x559E9E9E);
+        final foodPaint = Paint()..color = base;
+        canvas.drawCircle(center, radius, foodPaint);
+        final glow = Paint()
+          ..shader = RadialGradient(colors: [glowC, Colors.transparent])
+              .createShader(Rect.fromCircle(center: center, radius: minC * 0.7));
+        canvas.drawCircle(center, minC * 0.7, glow);
+      } else {
+        // Draw icon-based food
+        final img = _getFoodImage(food.kind);
+        if (img != null) {
+          final size = radius * 2;
+          final rect = Rect.fromCenter(center: center, width: size, height: size);
+          paintImage(canvas: canvas, rect: rect, image: img, fit: BoxFit.contain, filterQuality: FilterQuality.high);
+        } else {
+          // Start loading images lazily and fallback to colored circle
+          _maybeStartLoadImages();
+          final base = (food.kind == FoodKind.pineapple)
+              ? const Color(0xFFFFD54F)
+              : const Color(0xFFE53935);
+          final glowC = (food.kind == FoodKind.pineapple)
+              ? const Color(0x66FFD54F)
+              : const Color(0x55E53935);
+          final foodPaint = Paint()..color = base;
+          canvas.drawCircle(center, radius, foodPaint);
+          final glow = Paint()
+            ..shader = RadialGradient(colors: [glowC, Colors.transparent])
+                .createShader(Rect.fromCircle(center: center, radius: minC * 0.7));
+          canvas.drawCircle(center, minC * 0.7, glow);
+        }
       }
-
-      final foodPaint = Paint()..color = base;
-      canvas.drawCircle(center, radius, foodPaint);
-      // Glow
-      final glow = Paint()
-        ..shader = RadialGradient(colors: [glowC, Colors.transparent])
-            .createShader(Rect.fromCircle(center: center, radius: minC * 0.7));
-      canvas.drawCircle(center, minC * 0.7, glow);
     }
 
     // Eat particles (drift & fade); progress based on creation time
@@ -252,6 +274,55 @@ Paint pRight = Paint()
       return (p as dynamic).createdAtMs as int?;
     } catch (_) {
       return null;
+    }
+  }
+}
+
+Future<ui.Image> _loadAssetImage(String assetPath) async {
+  final data = await rootBundle.load(assetPath);
+  final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+  final frame = await codec.getNextFrame();
+  return frame.image;
+}
+
+extension _FoodAssets on FoodKind {
+  String? get assetPath {
+    switch (this) {
+      case FoodKind.strawberry:
+        return 'assets/strawberry.png';
+      case FoodKind.banana:
+        return 'assets/banana.png';
+      case FoodKind.apple:
+        return 'assets/apple.png';
+      case FoodKind.pineapple:
+        return 'assets/annanas.png';
+      case FoodKind.bad:
+        return null; // no icon
+    }
+  }
+}
+
+extension _FoodImages on SnakeFlameGame {
+  ui.Image? _getFoodImage(FoodKind kind) {
+    final img = _foodImgs[kind];
+    if (img == null && !_loadingImages) {
+      _maybeStartLoadImages();
+    }
+    return img;
+  }
+
+  void _maybeStartLoadImages() {
+    if (_loadingImages) return;
+    _loadingImages = true;
+    // Kick off async loads without awaiting; images will appear on subsequent frames
+    for (final kind in FoodKind.values) {
+      final path = kind.assetPath;
+      if (path == null) continue;
+      _loadAssetImage(path).then((image) {
+        _foodImgs[kind] = image;
+      }).catchError((_) {}).whenComplete(() {
+        _loadingImages = false;
+      });
     }
   }
 }

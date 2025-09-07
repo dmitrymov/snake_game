@@ -30,13 +30,22 @@ class GameService {
 
     final idx = _random.nextInt(available.length);
     final roll = _random.nextDouble();
+
+    // Decide points and kind
     int points = 1;
+    FoodKind kind = FoodKind.apple;
     if (roll < goldenChance) {
-      points = 2; // golden apple
+      points = 2; // bonus
+      kind = FoodKind.pineapple; // use pineapple for bonus
     } else if (allowBad && roll < goldenChance + badChance) {
       points = -1; // bad food
+      kind = FoodKind.bad;
+    } else {
+      // Normal food: choose randomly among the three fruits
+      final normalKinds = [FoodKind.strawberry, FoodKind.banana, FoodKind.apple];
+      kind = normalKinds[_random.nextInt(normalKinds.length)];
     }
-    return Food(position: available[idx], points: points);
+    return Food(position: available[idx], points: points, kind: kind);
   }
 
   /// Calculates the score increase based on current snake length and difficulty
