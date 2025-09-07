@@ -75,25 +75,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              Text('Board Width: ${s.boardWidth}'),
-              Slider(
-                min: 10,
-                max: 40,
-                divisions: 30,
-                value: s.boardWidth.toDouble(),
-                label: s.boardWidth.toString(),
-                onChanged: (v) => vm.setBoardWidth(v.round()),
-              ),
-              const SizedBox(height: 8),
-              Text('Board Height: ${s.boardHeight}'),
-              Slider(
-                min: 10,
-                max: 40,
-                divisions: 30,
-                value: s.boardHeight.toDouble(),
-                label: s.boardHeight.toString(),
-                onChanged: (v) => vm.setBoardHeight(v.round()),
-              ),
+              // Board size is now automatic and fits the screen; removed manual controls.
               const SizedBox(height: 8),
               Text('Base Speed (ms): ${s.baseSpeed}'),
               Slider(

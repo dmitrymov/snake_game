@@ -24,21 +24,18 @@ class SnakeFlameGame extends Game {
     final s = vm.gameState;
     final sz = size.toSize();
 
+    // Square cells: compute board size to preserve aspect and center within canvas
     final cell = _cellSize(sz, s.boardWidth, s.boardHeight);
     final boardW = cell * s.boardWidth;
     final boardH = cell * s.boardHeight;
+    final minC = cell;
 
-    // Fill entire canvas background
-    final fullBg = Paint()..color = const Color(0xFF000000);
-    canvas.drawRect(Rect.fromLTWH(0, 0, sz.width, sz.height), fullBg);
-
-    // Center the board within the canvas
+    // Center the board within the canvas and draw only the board area background
     final dx = (sz.width - boardW) / 2.0;
     final dy = (sz.height - boardH) / 2.0;
     canvas.save();
     canvas.translate(dx, dy);
 
-    // Board background area
     final bg = Paint()..color = const Color(0xFF000000);
     canvas.drawRect(Rect.fromLTWH(0, 0, boardW, boardH), bg);
 
@@ -50,7 +47,7 @@ class SnakeFlameGame extends Game {
       ..style = PaintingStyle.fill;
     for (final pos in s.obstacles) {
       final r = Rect.fromLTWH(pos.x * cell, pos.y * cell, cell, cell).deflate(1);
-      final rr = RRect.fromRectAndRadius(r, const Radius.circular(3));
+      final rr = RRect.fromRectAndRadius(r, Radius.circular(minC * 0.12));
       canvas.drawRRect(rr, obPaint);
     }
 
@@ -61,7 +58,7 @@ class SnakeFlameGame extends Game {
       final segPaint = Paint()
         ..color = isHead ? const Color(0xFF8BC34A) : const Color(0xFF4CAF50);
       final r = Rect.fromLTWH(seg.x * cell, seg.y * cell, cell, cell).deflate(1);
-      final rr = RRect.fromRectAndRadius(r, const Radius.circular(4));
+      final rr = RRect.fromRectAndRadius(r, Radius.circular(minC * 0.18));
       canvas.drawRRect(rr, segPaint);
     }
 
@@ -72,9 +69,9 @@ class SnakeFlameGame extends Game {
     for (final pop in vm.scorePopups) {
       final t = ((now - pop.createdAtMs) / pop.durationMs).clamp(0.0, 1.0);
       final base = Offset((pop.x + 0.5) * cell, (pop.y + 0.5) * cell);
-      final pt = base.translate(0, -cell * 0.8 * t);
+      final pt = base.translate(0, -minC * 0.8 * t);
       final alpha = (255 * (1.0 - t)).toInt();
-      _drawText(canvas, '+${pop.value}', pt, Colors.orange.withAlpha(alpha), fontSize: cell * 0.5);
+      _drawText(canvas, '+${pop.value}', pt, Colors.orange.withAlpha(alpha), fontSize: minC * 0.5);
     }
 
     // Food (pulse 0.9..1.1 around base)
@@ -82,7 +79,7 @@ class SnakeFlameGame extends Game {
       final f = s.food!.position;
       final center = Offset((f.x + 0.5) * cell, (f.y + 0.5) * cell);
       final pulse = 0.9 + 0.2 * (0.5 * (1 + math.sin(_time * math.pi * 2 / 1.2)));
-      final radius = cell * 0.42 * pulse;
+      final radius = minC * 0.42 * pulse;
 
       // Color by food points: golden (>=2), bad (<0), normal (1)
       final pval = s.food!.points;
@@ -101,8 +98,8 @@ class SnakeFlameGame extends Game {
       // Glow
       final glow = Paint()
         ..shader = RadialGradient(colors: [glowC, Colors.transparent])
-            .createShader(Rect.fromCircle(center: center, radius: cell * 0.7));
-      canvas.drawCircle(center, cell * 0.7, glow);
+            .createShader(Rect.fromCircle(center: center, radius: minC * 0.7));
+      canvas.drawCircle(center, minC * 0.7, glow);
     }
 
     // Eat particles (drift & fade); progress based on creation time
@@ -112,7 +109,7 @@ class SnakeFlameGame extends Game {
       final created = _createdAtMs(p);
       if (created == null) continue; // should not happen
       var t = ((now - created) / lifeMs).clamp(0.0, 1.0);
-      final dist = cell * 0.6;
+      final dist = minC * 0.6;
       final dx = math.cos(p.angle) * dist * t;
       final dy = math.sin(p.angle) * dist * t;
       final color = p.isRed ? const Color(0xFFE53935) : const Color(0xFF43A047);
@@ -127,13 +124,14 @@ class SnakeFlameGame extends Game {
         cpart = color;
       }
       final paint = Paint()..color = cpart.withAlpha(alpha);
-      final r = cell * (0.2 * (1.0 - 0.3 * t));
+      final r = minC * (0.2 * (1.0 - 0.3 * t));
       canvas.drawCircle(center.translate(dx, dy), r, paint);
     }
 
     // Inner shadow for board separation (subtle)
     _drawInnerShadow(canvas, boardW, boardH);
 
+    // Restore translation
     canvas.restore();
   }
 

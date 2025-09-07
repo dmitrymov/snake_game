@@ -151,10 +151,51 @@ int get highScore => _gameState.highScore;
     notifyListeners();
   }
 
+  /// Dynamically update the board size to fit the current screen (in cells).
+  /// This resets the game to Ready with preserved high score and settings.
+  void updateBoardSizeIfNeeded(int width, int height) {
+    if (width <= 0 || height <= 0) return;
+    if (width == _gameState.boardWidth && height == _gameState.boardHeight) return;
+
+    _stopGameTimer();
+
+    final difficulty = _deriveDifficulty();
+    final obstacleCount = _computeObstacleCount(difficulty, width: width, height: height);
+    final initialSnake = Snake.initial(boardWidth: width, boardHeight: height);
+    final obstacles = _gameService.generateObstacles(
+      initialSnake,
+      width,
+      height,
+      count: obstacleCount,
+    );
+
+    _gameState = GameState.initial(
+      boardWidth: width,
+      boardHeight: height,
+      gameSpeed: _gameState.baseSpeed,
+      highScore: _gameState.highScore,
+      baseSpeed: _gameState.baseSpeed,
+      wrapAround: _gameState.wrapAround,
+      obstacles: obstacles,
+    );
+
+    // Generate food for the new board
+    _generateFood();
+
+    _eatParticles.clear();
+    _scorePopups.clear();
+
+    notifyListeners();
+  }
+
   /// Apply settings and reset to ready state (preserves high score)
   Future<void> applySettings(GameSettings settings) async {
     _stopGameTimer();
     await _settingsService.saveSettings(settings);
+
+    // Keep current auto-fitted board size. Do not override with persisted settings.
+    final bw = _gameState.boardWidth;
+    final bh = _gameState.boardHeight;
 
     // Update sound toggle
     _soundService.setEnabled(settings.soundEnabled);
@@ -162,18 +203,18 @@ int get highScore => _gameState.highScore;
 
     // Pre-generate obstacles to visualize density for new settings
     final difficulty = settings.difficulty;
-    final obstacleCount = _computeObstacleCount(difficulty, width: settings.boardWidth, height: settings.boardHeight);
-    final initialSnake = Snake.initial(boardWidth: settings.boardWidth, boardHeight: settings.boardHeight);
+    final obstacleCount = _computeObstacleCount(difficulty, width: bw, height: bh);
+    final initialSnake = Snake.initial(boardWidth: bw, boardHeight: bh);
     final obstacles = _gameService.generateObstacles(
       initialSnake,
-      settings.boardWidth,
-      settings.boardHeight,
+      bw,
+      bh,
       count: obstacleCount,
     );
 
     _gameState = GameState.initial(
-      boardWidth: settings.boardWidth,
-      boardHeight: settings.boardHeight,
+      boardWidth: bw,
+      boardHeight: bh,
       gameSpeed: settings.baseSpeed,
       highScore: _gameState.highScore,
       baseSpeed: settings.baseSpeed,
@@ -193,6 +234,7 @@ int get highScore => _gameState.highScore;
     _gameState = _gameState.copyWith(snake: newSnake);
     notifyListeners();
   }
+
 
   /// Handles game tick - moves snake and updates game state
   void _gameTick() {

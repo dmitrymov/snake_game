@@ -14,6 +14,10 @@ class GameBoard extends StatefulWidget {
 
 class _GameBoardState extends State<GameBoard> {
   SnakeFlameGame? _game;
+  bool _sizedForThisReady = false;
+  bool _wasReady = false;
+  double? _lastSizedWidth;
+  double? _lastSizedHeight;
 
   @override
   void initState() {
@@ -27,16 +31,47 @@ class _GameBoardState extends State<GameBoard> {
     return Consumer<GameViewModel>(
       builder: (context, vm, _) {
         return Container(
-          decoration: BoxDecoration(
-            // Full-screen game area background
-            color: Colors.black,
-          ),
+          color: Colors.transparent,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return SizedBox(
-                width: constraints.maxWidth,
-                height: constraints.maxHeight,
-                child: GameWidget(game: _game!),
+              // Size the board grid once per Ready state, right before starting a game.
+              return Consumer<GameViewModel>(
+                builder: (context, vm, _) {
+                  // Reset sizing flag when we re-enter Ready state
+                  if (vm.isReady && !_wasReady) {
+                    _sizedForThisReady = false;
+                    _lastSizedWidth = null;
+                    _lastSizedHeight = null;
+                  }
+                  _wasReady = vm.isReady;
+
+                  if (vm.isReady) {
+                    final cw = constraints.maxWidth;
+                    final ch = constraints.maxHeight;
+                    final constraintsChanged = (_lastSizedWidth != cw) || (_lastSizedHeight != ch);
+                    if (!_sizedForThisReady || constraintsChanged) {
+                      final desiredCellPx = 28.0;
+                      final wCells = (cw / desiredCellPx).floor().clamp(6, 80).toInt();
+                      final hCells = (ch / desiredCellPx).floor().clamp(6, 80).toInt();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        vm.updateBoardSizeIfNeeded(wCells, hCells);
+                      });
+                      _sizedForThisReady = true;
+                      _lastSizedWidth = cw;
+                      _lastSizedHeight = ch;
+                    }
+                  }
+
+                  return SizedBox(
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    child: GameWidget(
+                      key: ValueKey('game-${constraints.maxWidth}x${constraints.maxHeight}-${Theme.of(context).brightness}-${MediaQuery.of(context).orientation}'),
+                      game: _game!,
+                    ),
+                  );
+                },
               );
             },
           ),

@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../viewmodels/game_viewmodel.dart';
 import '../models/direction.dart';
 import 'widgets/game_board.dart';
-import 'widgets/game_info.dart';
 import 'widgets/game_actions.dart';
 import 'widgets/game_controls.dart';
 import 'widgets/game_over_overlay.dart';
