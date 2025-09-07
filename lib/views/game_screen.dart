@@ -114,17 +114,17 @@ class _GameScreenState extends State<GameScreen> {
                               )
                             : const GameBoard(),
                       ),
-                      const SizedBox(height: 20),
+
 
                       // Game action buttons
                       const GameActions(),
 
-                      const SizedBox(height: 20),
+
 
                       // Game controls (hidden on Android; use swipe gestures instead)
                       if (!_isAndroid) const GameControls(),
 
-                      const SizedBox(height: 16),
+
                       // Instructions
                       // Container(
                       //   padding: const EdgeInsets.all(12),
