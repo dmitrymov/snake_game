@@ -103,7 +103,7 @@ class _GameScreenState extends State<GameScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       
-                      const SizedBox(height: 20),
+
                       
                       // Game board (swipe to change direction on Android)
                       Center(

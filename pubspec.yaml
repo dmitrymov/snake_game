@@ -42,7 +42,7 @@ dependencies:
   shared_preferences: ^2.2.2
 
   # Sound effects
-  audioplayers: ^5.2.1
+  audioplayers: ^6.5.1
 
   # Rendering/game loop utilities
   flame: ^1.13.1
@@ -60,7 +60,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
   # Generate Android app launcher icons from a single source image
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
 
   # Native splash screen generator
   flutter_native_splash: ^2.4.1
