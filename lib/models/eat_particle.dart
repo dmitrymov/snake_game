@@ -5,8 +5,9 @@ class EatParticle {
   final String id; // unique identifier for widget keys & removal
   final Position origin; // grid cell where it starts (food/head position)
   final double angle; // radians: direction to drift
-  final bool isRed; // color variant (red/green)
+  final bool isRed; // legacy color variant (used for normal)
   final int createdAtMs; // timestamp for animation progress
+  final int kind; // 0 = normal, 1 = golden, -1 = bad
 
   const EatParticle({
     required this.id,
@@ -14,6 +15,7 @@ class EatParticle {
     required this.angle,
     required this.isRed,
     required this.createdAtMs,
+    this.kind = 0,
   });
 }
 

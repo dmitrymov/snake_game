@@ -73,11 +73,24 @@ class SnakeFlameGame extends Game {
       final center = Offset((f.x + 0.5) * cell, (f.y + 0.5) * cell);
       final pulse = 0.9 + 0.2 * (0.5 * (1 + math.sin(_time * math.pi * 2 / 1.2)));
       final radius = cell * 0.42 * pulse;
-      final foodPaint = Paint()..color = const Color(0xFFE53935);
+
+      // Color by food points: golden (>=2), bad (<0), normal (1)
+      final pval = s.food!.points;
+      Color base = const Color(0xFFE53935); // red
+      Color glowC = const Color(0x55E53935);
+      if (pval >= 2) {
+        base = const Color(0xFFFFD54F); // amber
+        glowC = const Color(0x66FFD54F);
+      } else if (pval < 0) {
+        base = const Color(0xFF9E9E9E); // gray
+        glowC = const Color(0x559E9E9E);
+      }
+
+      final foodPaint = Paint()..color = base;
       canvas.drawCircle(center, radius, foodPaint);
       // Glow
       final glow = Paint()
-        ..shader = const RadialGradient(colors: [Color(0x55E53935), Colors.transparent])
+        ..shader = RadialGradient(colors: [glowC, Colors.transparent])
             .createShader(Rect.fromCircle(center: center, radius: cell * 0.7));
       canvas.drawCircle(center, cell * 0.7, glow);
     }
@@ -94,7 +107,16 @@ class SnakeFlameGame extends Game {
       final dy = math.sin(p.angle) * dist * t;
       final color = p.isRed ? const Color(0xFFE53935) : const Color(0xFF43A047);
       final alpha = (255 * (1.0 - t)).toInt();
-      final paint = Paint()..color = color.withAlpha(alpha);
+      // Particle color by kind
+      Color cpart;
+      if (p.kind == 1) {
+        cpart = const Color(0xFFFFD54F); // golden
+      } else if (p.kind == -1) {
+        cpart = const Color(0xFF9E9E9E); // bad
+      } else {
+        cpart = color;
+      }
+      final paint = Paint()..color = cpart.withAlpha(alpha);
       final r = cell * (0.2 * (1.0 - 0.3 * t));
       canvas.drawCircle(center.translate(dx, dy), r, paint);
     }

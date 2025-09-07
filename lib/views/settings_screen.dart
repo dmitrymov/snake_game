@@ -47,6 +47,14 @@ class SettingsScreen extends StatelessWidget {
                 value: s.soundEnabled,
                 onChanged: vm.setSoundEnabled,
               ),
+              const SizedBox(height: 8),
+
+              // Bad food toggle
+              SwitchListTile(
+                title: const Text('Bad food (can shrink snake)'),
+                value: s.badFoodEnabled,
+                onChanged: vm.setBadFoodEnabled,
+              ),
               const SizedBox(height: 16),
 
               // Difficulty selector

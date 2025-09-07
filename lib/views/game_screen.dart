@@ -60,10 +60,10 @@ class _GameScreenState extends State<GameScreen> {
               final isDark = Theme.of(context).brightness == Brightness.dark;
 
               Widget actionBtn({required IconData icon, required String tip, required VoidCallback onPressed, bool filledTonal = false}) {
-                if (isDark && filledTonal) {
-                  return IconButton.filledTonal(onPressed: onPressed, tooltip: tip, icon: Icon(icon));
-                }
-                return IconButton(onPressed: onPressed, tooltip: tip, icon: Icon(icon));
+                final btn = isDark && filledTonal
+                    ? IconButton.filledTonal(onPressed: onPressed, tooltip: tip, icon: Icon(icon))
+                    : IconButton(onPressed: onPressed, tooltip: tip, icon: Icon(icon));
+                return _Bouncy(child: btn);
               }
 
               if (vm.isPlaying) {
@@ -282,5 +282,32 @@ class _GameScreenState extends State<GameScreen> {
     }
     // Keep keyboard focus for desktop/web
     _focusNode.requestFocus();
+  }
+}
+
+class _Bouncy extends StatefulWidget {
+  const _Bouncy({required this.child});
+  final Widget child;
+
+  @override
+  State<_Bouncy> createState() => _BouncyState();
+}
+
+class _BouncyState extends State<_Bouncy> {
+  double _scale = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => setState(() => _scale = 0.9),
+      onPointerUp: (_) => setState(() => _scale = 1.0),
+      onPointerCancel: (_) => setState(() => _scale = 1.0),
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 90),
+        curve: Curves.easeOutBack,
+        child: widget.child,
+      ),
+    );
   }
 }

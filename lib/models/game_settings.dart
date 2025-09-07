@@ -10,6 +10,7 @@ class GameSettings {
   final Difficulty difficulty; // controls speed curve and obstacle density
   final AppThemeMode themeMode; // light/dark/system
   final bool soundEnabled; // whether sfx/haptics are enabled
+  final bool badFoodEnabled; // whether to spawn negative food
 
   const GameSettings({
     required this.boardWidth,
@@ -19,6 +20,7 @@ class GameSettings {
     required this.difficulty,
     required this.themeMode,
     required this.soundEnabled,
+    required this.badFoodEnabled,
   });
 
   factory GameSettings.defaults() => GameSettings(
@@ -29,6 +31,7 @@ class GameSettings {
         difficulty: Difficulty.normal,
         themeMode: AppThemeMode.system,
         soundEnabled: true,
+        badFoodEnabled: true,
       );
 
   GameSettings copyWith({
@@ -39,6 +42,7 @@ class GameSettings {
     Difficulty? difficulty,
     AppThemeMode? themeMode,
     bool? soundEnabled,
+    bool? badFoodEnabled,
   }) {
     return GameSettings(
       boardWidth: boardWidth ?? this.boardWidth,
@@ -48,6 +52,7 @@ class GameSettings {
       difficulty: difficulty ?? this.difficulty,
       themeMode: themeMode ?? this.themeMode,
       soundEnabled: soundEnabled ?? this.soundEnabled,
+      badFoodEnabled: badFoodEnabled ?? this.badFoodEnabled,
     );
   }
 
@@ -62,14 +67,15 @@ class GameSettings {
           wrapAround == other.wrapAround &&
           difficulty == other.difficulty &&
           themeMode == other.themeMode &&
-          soundEnabled == other.soundEnabled;
+          soundEnabled == other.soundEnabled &&
+          badFoodEnabled == other.badFoodEnabled;
 
   @override
   int get hashCode =>
-      boardWidth.hashCode ^ boardHeight.hashCode ^ baseSpeed.hashCode ^ wrapAround.hashCode ^ difficulty.hashCode ^ themeMode.hashCode ^ soundEnabled.hashCode;
+      boardWidth.hashCode ^ boardHeight.hashCode ^ baseSpeed.hashCode ^ wrapAround.hashCode ^ difficulty.hashCode ^ themeMode.hashCode ^ soundEnabled.hashCode ^ badFoodEnabled.hashCode;
 
   @override
   String toString() =>
-      'GameSettings(width: $boardWidth, height: $boardHeight, baseSpeed: $baseSpeed, wrap: $wrapAround, difficulty: $difficulty, theme: $themeMode, sound: $soundEnabled)';
+      'GameSettings(width: $boardWidth, height: $boardHeight, baseSpeed: $baseSpeed, wrap: $wrapAround, difficulty: $difficulty, theme: $themeMode, sound: $soundEnabled, badFood: $badFoodEnabled)';
 }
 

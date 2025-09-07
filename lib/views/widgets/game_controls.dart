@@ -63,20 +63,49 @@ class GameControls extends StatelessWidget {
     return SizedBox(
       width: 60,
       height: 60,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+      child: _BouncyTap(
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: EdgeInsets.zero,
           ),
-          padding: EdgeInsets.zero,
+          child: Icon(
+            icon,
+            size: 30,
+          ),
         ),
-        child: Icon(
-          icon,
-          size: 30,
-        ),
+      ),
+    );
+  }
+}
+
+class _BouncyTap extends StatefulWidget {
+  const _BouncyTap({required this.child});
+  final Widget child;
+
+  @override
+  State<_BouncyTap> createState() => _BouncyTapState();
+}
+
+class _BouncyTapState extends State<_BouncyTap> {
+  double _scale = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => setState(() => _scale = 0.92),
+      onPointerUp: (_) => setState(() => _scale = 1.0),
+      onPointerCancel: (_) => setState(() => _scale = 1.0),
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 90),
+        curve: Curves.easeOutBack,
+        child: widget.child,
       ),
     );
   }

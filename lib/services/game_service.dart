@@ -10,7 +10,7 @@ class GameService {
 
   /// Generates a random food position that doesn't collide with the snake or blocked cells.
   /// Picks uniformly from all currently unoccupied cells to avoid bias or repeats.
-  Food generateFood(Snake snake, int boardWidth, int boardHeight, {Set<Position> blocked = const {}}) {
+  Food generateFood(Snake snake, int boardWidth, int boardHeight, {Set<Position> blocked = const {}, bool allowBad = true, double goldenChance = 0.05, double badChance = 0.08}) {
     // Build a list of all available cells not occupied by the snake or blocks.
     final occupied = Set<Position>.from(snake.body)..addAll(blocked);
     final available = <Position>[];
@@ -29,7 +29,14 @@ class GameService {
     }
 
     final idx = _random.nextInt(available.length);
-    return Food(position: available[idx]);
+    final roll = _random.nextDouble();
+    int points = 1;
+    if (roll < goldenChance) {
+      points = 2; // golden apple
+    } else if (allowBad && roll < goldenChance + badChance) {
+      points = -1; // bad food
+    }
+    return Food(position: available[idx], points: points);
   }
 
   /// Calculates the score increase based on current snake length and difficulty

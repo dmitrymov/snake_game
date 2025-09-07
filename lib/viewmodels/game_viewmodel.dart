@@ -17,6 +17,7 @@ import '../services/sound_service.dart';
 /// ViewModel that manages the Snake game state and business logic
 class GameViewModel extends ChangeNotifier {
   final GameService _gameService = GameService();
+  bool _badFoodEnabled = true;
   final HighScoreService _highScoreService = HighScoreService();
   final SettingsService _settingsService = SettingsService();
   final SoundService _soundService = SoundService();
@@ -147,6 +148,7 @@ int get highScore => _gameState.highScore;
 
     // Update sound toggle
     _soundService.setEnabled(settings.soundEnabled);
+    _badFoodEnabled = settings.badFoodEnabled;
 
     // Pre-generate obstacles to visualize density for new settings
     final difficulty = settings.difficulty;
@@ -217,12 +219,26 @@ int get highScore => _gameState.highScore;
     if (willEatFood) {
       // Snake grows and score increases
       _soundService.playEat();
-      _spawnEatParticles(nextHeadPosition);
+      final foodPoints = newFood!.points;
+      final kind = foodPoints >= 2 ? 1 : (foodPoints < 0 ? -1 : 0);
+      _spawnEatParticles(nextHeadPosition, kind);
       final diff = _deriveDifficulty();
-      final inc = _gameService.calculateScoreIncrease(newScore, newSnake.length, diff);
-      _spawnScorePopup(nextHeadPosition, inc);
-      newSnake = newSnake.moveAndGrow(_gameState.boardWidth, _gameState.boardHeight);
-      newScore += inc;
+      if (foodPoints > 0) {
+        final inc = _gameService.calculateScoreIncrease(newScore, newSnake.length, diff);
+        _spawnScorePopup(nextHeadPosition, inc);
+        newSnake = newSnake.moveAndGrow(_gameState.boardWidth, _gameState.boardHeight);
+        newScore += inc;
+      } else {
+        // Bad food: shrink by 1
+        newSnake = newSnake.move(_gameState.boardWidth, _gameState.boardHeight);
+        if (newSnake.length > 1) {
+          final reduced = List<Position>.from(newSnake.body)..removeLast();
+          newSnake = newSnake.copyWith(body: reduced);
+        } else {
+          endGame();
+          return;
+        }
+      }
       newFood = null; // Food is consumed
     } else {
       // Normal movement
@@ -270,6 +286,7 @@ int get highScore => _gameState.highScore;
       _gameState.boardWidth,
       _gameState.boardHeight,
       blocked: _gameState.obstacles,
+      allowBad: _badFoodEnabled,
     );
     _gameState = _gameState.copyWith(food: food);
   }
@@ -317,6 +334,7 @@ int get highScore => _gameState.highScore;
 
     // Initialize sound toggle
     _soundService.setEnabled(s.soundEnabled);
+    _badFoodEnabled = s.badFoodEnabled;
 
     // Pre-generate obstacles using loaded settings
     final difficulty = s.difficulty;
@@ -364,7 +382,7 @@ int get highScore => _gameState.highScore;
     return raw.clamp(0, maxAllowed);
   }
 
-  void _spawnEatParticles(Position origin) {
+  void _spawnEatParticles(Position origin, int kind) {
     final rng = math.Random();
     const count = 8;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -376,6 +394,7 @@ int get highScore => _gameState.highScore;
         angle: angle,
         isRed: i.isEven,
         createdAtMs: now,
+        kind: kind,
       );
       _eatParticles.add(p);
       // Schedule removal after 250ms

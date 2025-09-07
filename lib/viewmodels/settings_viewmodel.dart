@@ -57,6 +57,11 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setBadFoodEnabled(bool value) {
+    _settings = _settings.copyWith(badFoodEnabled: value);
+    notifyListeners();
+  }
+
   void setDifficulty(Difficulty value) {
     // When changing difficulty, optionally update base speed to the suggested value
     // but keep user override if they changed base speed manually afterwards.

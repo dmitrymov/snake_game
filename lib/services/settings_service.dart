@@ -13,6 +13,7 @@ class SettingsService {
   // Deprecated key kept for backward-compat read
   static const _kDarkMode = 'dark_mode';
   static const _kSoundEnabled = 'sound_enabled';
+  static const _kBadFood = 'bad_food_enabled';
 
   Future<GameSettings> getSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -31,6 +32,7 @@ class SettingsService {
       difficulty: difficulty,
       themeMode: themeMode,
       soundEnabled: prefs.getBool(_kSoundEnabled) ?? true,
+      badFoodEnabled: prefs.getBool(_kBadFood) ?? true,
     );
   }
 
@@ -43,6 +45,7 @@ class SettingsService {
     await prefs.setString(_kDifficulty, settings.difficulty.asString);
     await prefs.setString(_kThemeMode, settings.themeMode.asString);
     await prefs.setBool(_kSoundEnabled, settings.soundEnabled);
+    await prefs.setBool(_kBadFood, settings.badFoodEnabled);
   }
 }
 
