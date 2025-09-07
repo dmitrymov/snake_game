@@ -32,10 +32,24 @@ class GameService {
     return Food(position: available[idx]);
   }
 
-  /// Calculates the score increase based on current snake length
-  int calculateScoreIncrease(int currentScore, int snakeLength) {
+  /// Calculates the score increase based on current snake length and difficulty
+  int calculateScoreIncrease(int currentScore, int snakeLength, Difficulty difficulty) {
     // Base score + bonus for longer snake
-    return 10 + (snakeLength ~/ 5) * 5;
+    final base = 10 + (snakeLength ~/ 5) * 5;
+    // Difficulty multipliers: higher difficulty yields higher score
+    final double mult;
+    switch (difficulty) {
+      case Difficulty.easy:
+        mult = 1.0;
+        break;
+      case Difficulty.normal:
+        mult = 1.25;
+        break;
+      case Difficulty.hard:
+        mult = 1.5;
+        break;
+    }
+    return (base * mult).round();
   }
 
   /// Calculates the game speed based on current score and difficulty

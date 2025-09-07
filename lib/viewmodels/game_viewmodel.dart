@@ -218,7 +218,8 @@ int get highScore => _gameState.highScore;
       // Snake grows and score increases
       _soundService.playEat();
       _spawnEatParticles(nextHeadPosition);
-      final inc = _gameService.calculateScoreIncrease(newScore, newSnake.length);
+      final diff = _deriveDifficulty();
+      final inc = _gameService.calculateScoreIncrease(newScore, newSnake.length, diff);
       _spawnScorePopup(nextHeadPosition, inc);
       newSnake = newSnake.moveAndGrow(_gameState.boardWidth, _gameState.boardHeight);
       newScore += inc;
