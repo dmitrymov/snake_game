@@ -64,6 +64,8 @@ int get highScore => _gameState.highScore;
       count: obstacleCount,
     );
     
+    final initialStatus = (difficulty == Difficulty.easy) ? GameStatus.playing : GameStatus.paused;
+
     _gameState = GameState.initial(
       boardWidth: _gameState.boardWidth,
       boardHeight: _gameState.boardHeight,
@@ -72,9 +74,17 @@ int get highScore => _gameState.highScore;
       baseSpeed: _gameState.baseSpeed,
       wrapAround: _gameState.wrapAround,
       obstacles: obstacles,
-    ).copyWith(status: GameStatus.playing);
+    ).copyWith(status: initialStatus);
+
     _generateFood();
-    _startGameTimer();
+
+    // For non-easy difficulty, show 3-2-1 countdown before starting
+    if (difficulty == Difficulty.easy) {
+      _startGameTimer();
+    } else {
+      _startResumeCountdown();
+    }
+
     _eatParticles.clear();
     
     notifyListeners();
