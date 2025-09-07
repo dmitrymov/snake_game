@@ -8,15 +8,18 @@ class SettingsViewModel extends ChangeNotifier {
   final SettingsService _service = SettingsService();
 
   GameSettings _settings = GameSettings.defaults();
+  GameSettings _saved = GameSettings.defaults();
   bool _loading = false;
 
   GameSettings get settings => _settings;
   bool get isLoading => _loading;
+  bool get isDirty => _settings != _saved;
 
   Future<void> load() async {
     _loading = true;
     notifyListeners();
     _settings = await _service.getSettings();
+    _saved = _settings;
     _loading = false;
     notifyListeners();
   }
@@ -69,6 +72,8 @@ class SettingsViewModel extends ChangeNotifier {
 
   Future<void> save() async {
     await _service.saveSettings(_settings);
+    _saved = _settings;
+    notifyListeners();
   }
 }
 

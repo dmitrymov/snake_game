@@ -57,40 +57,30 @@ class _GameScreenState extends State<GameScreen> {
           Consumer<GameViewModel>(
             builder: (context, vm, _) {
               final buttons = <Widget>[];
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+
+              Widget actionBtn({required IconData icon, required String tip, required VoidCallback onPressed, bool filledTonal = false}) {
+                if (isDark && filledTonal) {
+                  return IconButton.filledTonal(onPressed: onPressed, tooltip: tip, icon: Icon(icon));
+                }
+                return IconButton(onPressed: onPressed, tooltip: tip, icon: Icon(icon));
+              }
 
               if (vm.isPlaying) {
-                buttons.add(
-                  IconButton(
-                    tooltip: 'Pause',
-                    icon: const Icon(Icons.pause),
-                    onPressed: vm.pauseGame,
-                  ),
-                );
+                buttons.add(actionBtn(icon: Icons.pause, tip: 'Pause', onPressed: vm.pauseGame, filledTonal: true));
               } else if (vm.isPaused) {
-                buttons.add(
-                  IconButton(
-                    tooltip: 'Resume',
-                    icon: const Icon(Icons.play_arrow),
-                    onPressed: vm.resumeGame,
-                  ),
-                );
+                buttons.add(actionBtn(icon: Icons.play_arrow, tip: 'Resume', onPressed: vm.resumeGame, filledTonal: true));
               }
 
               if (!vm.isReady) {
-                buttons.add(
-                  IconButton(
-                    tooltip: 'Reset',
-                    icon: const Icon(Icons.refresh),
-                    onPressed: vm.resetGame,
-                  ),
-                );
+                buttons.add(actionBtn(icon: Icons.refresh, tip: 'Reset', onPressed: vm.resetGame, filledTonal: true));
               }
 
               return Row(mainAxisSize: MainAxisSize.min, children: buttons);
             },
           ),
 
-          // Settings action
+          // Settings action (kept standard)
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),

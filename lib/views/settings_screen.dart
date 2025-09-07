@@ -114,6 +114,12 @@ class SettingsScreen extends StatelessWidget {
                       await gameVm.applySettings(vm.settings);
                       if (context.mounted) Navigator.of(context).pop();
                     },
+                    style: vm.isDirty
+                        ? ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          )
+                        : null,
                     icon: const Icon(Icons.save),
                     label: const Text('Save'),
                   ),

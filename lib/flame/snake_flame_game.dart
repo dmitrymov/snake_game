@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:flame/game.dart';
 import 'package:flame/text.dart';
@@ -98,6 +98,9 @@ class SnakeFlameGame extends Game {
       final r = cell * (0.2 * (1.0 - 0.3 * t));
       canvas.drawCircle(center.translate(dx, dy), r, paint);
     }
+
+    // Inner shadow for board separation (subtle)
+    _drawInnerShadow(canvas, boardW, boardH);
   }
 
   @override
@@ -125,6 +128,31 @@ class SnakeFlameGame extends Game {
       style: TextStyle(color: color, fontSize: fontSize, fontWeight: FontWeight.bold),
     );
     tp.render(canvas, text, v.Vector2(pos.dx, pos.dy));
+  }
+
+  void _drawInnerShadow(Canvas c, double w, double h) {
+    final double s = math.max(4.0, math.min(w, h) * 0.02);
+    final List<Color> colors = [const Color(0x33000000), const Color(0x00000000)];
+
+    // Top
+Paint pTop = Paint()
+      ..shader = ui.Gradient.linear(const Offset(0, 0), Offset(0, s), colors);
+    c.drawRect(Rect.fromLTWH(0, 0, w, s), pTop);
+
+    // Bottom
+Paint pBottom = Paint()
+      ..shader = ui.Gradient.linear(Offset(0, h), Offset(0, h - s), colors);
+    c.drawRect(Rect.fromLTWH(0, h - s, w, s), pBottom);
+
+    // Left
+Paint pLeft = Paint()
+      ..shader = ui.Gradient.linear(const Offset(0, 0), Offset(s, 0), colors);
+    c.drawRect(Rect.fromLTWH(0, 0, s, h), pLeft);
+
+    // Right
+Paint pRight = Paint()
+      ..shader = ui.Gradient.linear(Offset(w, 0), Offset(w - s, 0), colors);
+    c.drawRect(Rect.fromLTWH(w - s, 0, s, h), pRight);
   }
 
   void _drawHeadDetail(Canvas canvas, Position head, Direction direction, double cell) {
