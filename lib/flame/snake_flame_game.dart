@@ -1,16 +1,23 @@
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flame/game.dart';
+import 'package:flame/text.dart';
+import 'package:vector_math/vector_math.dart' as v;
 import 'package:flutter/material.dart';
 import '../models/position.dart';
 import '../models/direction.dart';
 import '../viewmodels/game_viewmodel.dart';
 
 class SnakeFlameGame extends Game {
-  SnakeFlameGame(this.vm);
+  SnakeFlameGame(this.vm) {
+    _scheduleNextBlink();
+  }
 
   final GameViewModel vm;
   double _time = 0.0; // seconds, for food pulse
+  final math.Random _rng = math.Random();
+  double _blinkUntil = -1.0; // sec
+  double _nextBlinkAt = 2.0; // sec
 
   @override
   void render(Canvas canvas) {
@@ -24,6 +31,8 @@ class SnakeFlameGame extends Game {
     // Clear to black (board background)
     final bg = Paint()..color = const Color(0xFF000000);
     canvas.drawRect(Rect.fromLTWH(0, 0, boardW, boardH), bg);
+
+    final now = DateTime.now().millisecondsSinceEpoch;
 
     // Obstacles
     final obPaint = Paint()
@@ -49,6 +58,15 @@ class SnakeFlameGame extends Game {
     // Head eyes and tongue
     _drawHeadDetail(canvas, head, s.snake.direction, cell);
 
+    // Floating score popups
+    for (final pop in vm.scorePopups) {
+      final t = ((now - pop.createdAtMs) / pop.durationMs).clamp(0.0, 1.0);
+      final base = Offset((pop.x + 0.5) * cell, (pop.y + 0.5) * cell);
+      final pt = base.translate(0, -cell * 0.8 * t);
+      final alpha = (255 * (1.0 - t)).toInt();
+      _drawText(canvas, '+${pop.value}', pt, Colors.orange.withAlpha(alpha), fontSize: cell * 0.5);
+    }
+
     // Food (pulse 0.9..1.1 around base)
     if (s.food != null) {
       final f = s.food!.position;
@@ -65,7 +83,6 @@ class SnakeFlameGame extends Game {
     }
 
     // Eat particles (drift & fade); progress based on creation time
-    final now = DateTime.now().millisecondsSinceEpoch;
     for (final p in vm.eatParticles) {
       final center = Offset((p.origin.x + 0.5) * cell, (p.origin.y + 0.5) * cell);
       final lifeMs = 250.0;
@@ -86,6 +103,14 @@ class SnakeFlameGame extends Game {
   @override
   void update(double dt) {
     _time += dt;
+    if (_time >= _nextBlinkAt) {
+      _blinkUntil = _time + 0.15; // 150ms blink
+      _scheduleNextBlink();
+    }
+  }
+
+  void _scheduleNextBlink() {
+    _nextBlinkAt = _time + 6.0 + _rng.nextDouble() * 4.0; // 6..10s
   }
 
   // Utility
@@ -93,6 +118,13 @@ class SnakeFlameGame extends Game {
 
   double _cellSize(Size size, int w, int h) {
     return math.min(size.width / w, size.height / h);
+  }
+
+  void _drawText(Canvas canvas, String text, Offset pos, Color color, {double fontSize = 16}) {
+    final tp = TextPaint(
+      style: TextStyle(color: color, fontSize: fontSize, fontWeight: FontWeight.bold),
+    );
+    tp.render(canvas, text, v.Vector2(pos.dx, pos.dy));
   }
 
   void _drawHeadDetail(Canvas canvas, Position head, Direction direction, double cell) {
@@ -119,8 +151,10 @@ class SnakeFlameGame extends Game {
     }
     final eyeOffF = cell * 0.20;
     final eyeOffL = cell * 0.16;
-    final eyeR = cell * 0.10;
+    final baseEyeR = cell * 0.10;
     final pupilR = cell * 0.05;
+    final blinkFactor = (_time <= _blinkUntil) ? 0.12 : 1.0;
+    final eyeR = baseEyeR * blinkFactor;
 
     final eye1 = center + forward * eyeOffF + right * eyeOffL;
     final eye2 = center + forward * eyeOffF - right * eyeOffL;
@@ -133,7 +167,9 @@ class SnakeFlameGame extends Game {
     canvas.drawCircle(eye2 + forward * pupilF, pupilR, pupilPaint);
 
     // Tongue only when playing
-    if (vm.isPlaying) {
+    // Tongue flick cadence: 0.16s visible every 0.8s
+    final flickOn = vm.isPlaying && ((_time % 0.8) < 0.16);
+    if (flickOn) {
       final len = cell * 0.18;
       final width = cell * 0.12;
       final tip = center + forward * (cell * 0.5);

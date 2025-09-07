@@ -176,6 +176,25 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
 
+          // Resume countdown overlay
+          Consumer<GameViewModel>(
+            builder: (context, vm, _) {
+              final c = vm.resumeCountdown;
+              if (c == null) return const SizedBox.shrink();
+              return Positioned.fill(
+                child: Container(
+                  color: Colors.black38,
+                  child: Center(
+                    child: Text(
+                      '$c',
+                      style: const TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
           // Tap-to-start hint overlay on mobile when ready
           Consumer<GameViewModel>(
             builder: (context, vm, _) {

@@ -8,6 +8,7 @@ import '../models/difficulty.dart';
 import '../models/position.dart';
 import '../models/snake.dart';
 import '../models/eat_particle.dart';
+import '../models/score_popup.dart';
 import '../services/game_service.dart';
 import '../services/high_score_service.dart';
 import '../services/settings_service.dart';
@@ -43,6 +44,10 @@ int get highScore => _gameState.highScore;
   // Transient eat particles for effects
   final List<EatParticle> _eatParticles = [];
   List<EatParticle> get eatParticles => List.unmodifiable(_eatParticles);
+
+  // Floating score popups
+  final List<ScorePopup> _scorePopups = [];
+  List<ScorePopup> get scorePopups => List.unmodifiable(_scorePopups);
 
   /// Starts a new game
   void startNewGame() {
@@ -84,12 +89,31 @@ int get highScore => _gameState.highScore;
   }
 
   /// Resumes the paused game
+  int? _resumeCountdown; // 3..2..1 when resuming
+  int? get resumeCountdown => _resumeCountdown;
+
   void resumeGame() {
     if (!_gameState.isPaused) return;
-    
-    _gameState = _gameState.copyWith(status: GameStatus.playing);
-    _startGameTimer();
+    _startResumeCountdown();
+  }
+
+  void _startResumeCountdown() {
+    _resumeCountdown = 3;
     notifyListeners();
+    Timer.periodic(const Duration(milliseconds: 800), (timer) {
+      if (_resumeCountdown == null) {
+        timer.cancel();
+        return;
+      }
+      _resumeCountdown = (_resumeCountdown! - 1);
+      if (_resumeCountdown! <= 0) {
+        timer.cancel();
+        _resumeCountdown = null;
+        _gameState = _gameState.copyWith(status: GameStatus.playing);
+        _startGameTimer();
+      }
+      notifyListeners();
+    });
   }
 
   /// Ends the current game
@@ -112,6 +136,7 @@ int get highScore => _gameState.highScore;
       wrapAround: _gameState.wrapAround,
     );
     _eatParticles.clear();
+    _scorePopups.clear();
     notifyListeners();
   }
 
@@ -144,6 +169,7 @@ int get highScore => _gameState.highScore;
       obstacles: obstacles,
     );
     _eatParticles.clear();
+    _scorePopups.clear();
     notifyListeners();
   }
 
@@ -192,8 +218,10 @@ int get highScore => _gameState.highScore;
       // Snake grows and score increases
       _soundService.playEat();
       _spawnEatParticles(nextHeadPosition);
+      final inc = _gameService.calculateScoreIncrease(newScore, newSnake.length);
+      _spawnScorePopup(nextHeadPosition, inc);
       newSnake = newSnake.moveAndGrow(_gameState.boardWidth, _gameState.boardHeight);
-      newScore += _gameService.calculateScoreIncrease(newScore, newSnake.length);
+      newScore += inc;
       newFood = null; // Food is consumed
     } else {
       // Normal movement
@@ -355,6 +383,23 @@ int get highScore => _gameState.highScore;
         notifyListeners();
       });
     }
+    notifyListeners();
+  }
+
+  void _spawnScorePopup(Position origin, int value) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final popup = ScorePopup(
+      id: 'popup_${now}_${_scorePopups.length}',
+      value: value,
+      createdAtMs: now,
+      x: origin.x,
+      y: origin.y,
+    );
+    _scorePopups.add(popup);
+    Timer(const Duration(milliseconds: 450), () {
+      _scorePopups.removeWhere((p) => p.id == popup.id);
+      notifyListeners();
+    });
     notifyListeners();
   }
 
