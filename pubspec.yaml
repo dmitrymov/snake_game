@@ -119,10 +119,10 @@ flutter_native_splash:
   android: true
   ios: false
   web: false
-  color: "#1B5E20" # dark green to match app theme
+  color: "#d6d4d4" # neutral dark gray for better contrast with green icon
   image: assets/snake_logo.png
   android_gravity: center
   fullscreen: true
   android_12:
-    color: "#1B5E20"
+    color: "#d6d4d4"
     image: assets/snake_logo.png
