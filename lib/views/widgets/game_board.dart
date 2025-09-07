@@ -46,8 +46,8 @@ class _GameBoardState extends State<GameBoard> {
   /// Calculates the appropriate cell size based on screen size
   double _calculateCellSize(BuildContext context, int boardWidth, int boardHeight) {
     final screenSize = MediaQuery.of(context).size;
-    final maxWidth = screenSize.width * 0.9;
-    final maxHeight = screenSize.height * 0.6;
+    final maxWidth = screenSize.width * 0.95;
+    final maxHeight = screenSize.height * 0.88;
 
     final cellWidth = maxWidth / boardWidth;
     final cellHeight = maxHeight / boardHeight;

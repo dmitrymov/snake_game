@@ -45,10 +45,7 @@ class _GameScreenState extends State<GameScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          'Snake Game',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const _ToolbarStats(),
         backgroundColor: Colors.green[700],
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -117,20 +114,17 @@ class _GameScreenState extends State<GameScreen> {
                               )
                             : const GameBoard(),
                       ),
-                      
                       const SizedBox(height: 20),
-                      
+
                       // Game action buttons
                       const GameActions(),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Game controls (hidden on Android; use swipe gestures instead)
                       if (!_isAndroid) const GameControls(),
-                      
+
                       const SizedBox(height: 16),
-                                            // Game information display
-                      const GameInfo(),
                       // Instructions
                       // Container(
                       //   padding: const EdgeInsets.all(12),
@@ -282,6 +276,58 @@ class _GameScreenState extends State<GameScreen> {
     }
     // Keep keyboard focus for desktop/web
     _focusNode.requestFocus();
+  }
+}
+
+class _ToolbarStats extends StatelessWidget {
+  const _ToolbarStats({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = Theme.of(context).textTheme.labelMedium?.copyWith(fontSize: 15);
+    final iconColor = Theme.of(context).appBarTheme.foregroundColor ?? Theme.of(context).colorScheme.onSurface;
+    return Consumer<GameViewModel>(
+      builder: (context, vm, _) {
+        String status;
+        if (vm.isPlaying) {
+          status = 'Play';
+        } else if (vm.isPaused) {
+          status = 'Pause';
+        } else if (vm.isGameOver) {
+          status = 'Over';
+        } else {
+          status = 'Ready';
+        }
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _mini(icon: Icons.star, value: vm.score.toString(), color: Colors.orange, style: textStyle),
+              const SizedBox(width: 10),
+              _mini(icon: Icons.emoji_events, value: vm.highScore.toString(), color: Colors.purple, style: textStyle),
+              const SizedBox(width: 10),
+              _mini(icon: Icons.straighten, value: vm.snakeLength.toString(), color: Colors.green, style: textStyle),
+              const SizedBox(width: 10),
+              Icon(Icons.circle, size: 8, color: iconColor.withOpacity(0.7)),
+              const SizedBox(width: 8),
+              Text(status, style: textStyle),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _mini({required IconData icon, required String value, required Color color, TextStyle? style}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 2),
+        Text(value, style: style?.copyWith(color: color)),
+      ],
+    );
   }
 }
 
