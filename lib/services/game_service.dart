@@ -25,7 +25,7 @@ class GameService {
 
     // Fallback: if no cells are available (rare end state), keep food at head.
     if (available.isEmpty) {
-      return Food(position: snake.head);
+      return Food(position: snake.head, points: 1, kind: FoodKind.apple, createdAtMs: DateTime.now().millisecondsSinceEpoch);
     }
 
     final idx = _random.nextInt(available.length);
@@ -45,7 +45,7 @@ class GameService {
       final normalKinds = [FoodKind.strawberry, FoodKind.banana, FoodKind.apple];
       kind = normalKinds[_random.nextInt(normalKinds.length)];
     }
-    return Food(position: available[idx], points: points, kind: kind);
+    return Food(position: available[idx], points: points, kind: kind, createdAtMs: DateTime.now().millisecondsSinceEpoch);
   }
 
   /// Calculates the score increase based on current snake length and difficulty

@@ -9,6 +9,7 @@ import '../models/position.dart';
 import '../models/snake.dart';
 import '../models/eat_particle.dart';
 import '../models/score_popup.dart';
+import '../models/food.dart';
 import '../services/game_service.dart';
 import '../services/high_score_service.dart';
 import '../services/settings_service.dart';
@@ -24,6 +25,7 @@ class GameViewModel extends ChangeNotifier {
   
   GameState _gameState = GameState.initial();
   Timer? _gameTimer;
+  Timer? _badFoodTimer;
 
   GameViewModel() {
     _loadHighScore();
@@ -130,6 +132,7 @@ int get highScore => _gameState.highScore;
   /// Ends the current game
   void endGame() {
     _stopGameTimer();
+    _cancelBadFoodTimer();
     _soundService.playCrash();
     _gameState = _gameState.copyWith(status: GameStatus.gameOver);
     notifyListeners();
@@ -138,6 +141,7 @@ int get highScore => _gameState.highScore;
   /// Resets the game to initial state
   void resetGame() {
     _stopGameTimer();
+    _cancelBadFoodTimer();
     _gameState = GameState.initial(
       boardWidth: _gameState.boardWidth,
       boardHeight: _gameState.boardHeight,
@@ -223,6 +227,8 @@ int get highScore => _gameState.highScore;
     );
     _eatParticles.clear();
     _scorePopups.clear();
+    _cancelBadFoodTimer();
+    _generateFood();
     notifyListeners();
   }
 
@@ -341,6 +347,7 @@ int get highScore => _gameState.highScore;
       allowBad: _badFoodEnabled,
     );
     _gameState = _gameState.copyWith(food: food);
+    _scheduleBadFoodExpiry(food);
   }
 
   /// Updates the game speed based on current score
@@ -411,6 +418,38 @@ int get highScore => _gameState.highScore;
     notifyListeners();
   }
 
+  void _scheduleBadFoodExpiry(Food food) {
+    _cancelBadFoodTimer();
+    if (food.kind == FoodKind.bad) {
+      _badFoodTimer = Timer(const Duration(seconds: 30), () {
+        // If food is unchanged and still bad, remove and respawn
+        final current = _gameState.food;
+        if (current != null &&
+            current.kind == FoodKind.bad &&
+            current.createdAtMs == food.createdAtMs &&
+            current.position == food.position &&
+            _gameState.status != GameStatus.gameOver) {
+          _gameState = _gameState.copyWith(food: null);
+          _generateFood();
+          notifyListeners();
+        }
+      });
+    }
+  }
+
+  void _cancelBadFoodTimer() {
+    _badFoodTimer?.cancel();
+    _badFoodTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _stopGameTimer();
+    _cancelBadFoodTimer();
+    _soundService.dispose();
+    super.dispose();
+  }
+
   Difficulty _deriveDifficulty() {
     // We infer difficulty from settings by comparing baseSpeed and wrapAround is not relevant.
     // Since GameState does not store difficulty explicitly, read current persisted settings again would be heavy.
@@ -475,9 +514,4 @@ int get highScore => _gameState.highScore;
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    _stopGameTimer();
-    super.dispose();
-  }
 }
