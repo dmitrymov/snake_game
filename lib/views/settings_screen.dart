@@ -29,7 +29,7 @@ class SettingsScreen extends StatelessWidget {
                   labelText: 'Theme',
                   border: OutlineInputBorder(),
                 ),
-                value: s.themeMode,
+                initialValue: s.themeMode,
                 items: const [
                   DropdownMenuItem(value: AppThemeMode.system, child: Text('System')),
                   DropdownMenuItem(value: AppThemeMode.light, child: Text('Light')),
@@ -49,6 +49,14 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
+              // Haptics toggle
+              SwitchListTile(
+                title: const Text('Haptics'),
+                value: s.hapticsEnabled,
+                onChanged: vm.setHapticsEnabled,
+              ),
+              const SizedBox(height: 8),
+
               // Bad food toggle
               SwitchListTile(
                 title: const Text('Bad food (can shrink snake)'),
@@ -63,7 +71,7 @@ class SettingsScreen extends StatelessWidget {
                   labelText: 'Difficulty',
                   border: OutlineInputBorder(),
                 ),
-                value: s.difficulty,
+                initialValue: s.difficulty,
                 items: const [
                   DropdownMenuItem(value: Difficulty.easy, child: Text('Easy')),
                   DropdownMenuItem(value: Difficulty.normal, child: Text('Normal')),

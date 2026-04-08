@@ -1,7 +1,7 @@
-/// Immutable model representing user-configurable game settings
 import 'difficulty.dart';
 import 'app_theme_mode.dart';
 
+/// Immutable model representing user-configurable game settings
 class GameSettings {
   final int boardWidth;
   final int boardHeight;
@@ -9,7 +9,8 @@ class GameSettings {
   final bool wrapAround; // whether snake wraps at edges
   final Difficulty difficulty; // controls speed curve and obstacle density
   final AppThemeMode themeMode; // light/dark/system
-  final bool soundEnabled; // whether sfx/haptics are enabled
+  final bool soundEnabled; // whether sfx are enabled
+  final bool hapticsEnabled; // whether haptic feedback is enabled
   final bool badFoodEnabled; // whether to spawn negative food
 
   const GameSettings({
@@ -20,6 +21,7 @@ class GameSettings {
     required this.difficulty,
     required this.themeMode,
     required this.soundEnabled,
+    required this.hapticsEnabled,
     required this.badFoodEnabled,
   });
 
@@ -31,6 +33,7 @@ class GameSettings {
         difficulty: Difficulty.normal,
         themeMode: AppThemeMode.system,
         soundEnabled: true,
+        hapticsEnabled: true,
         badFoodEnabled: true,
       );
 
@@ -42,6 +45,7 @@ class GameSettings {
     Difficulty? difficulty,
     AppThemeMode? themeMode,
     bool? soundEnabled,
+    bool? hapticsEnabled,
     bool? badFoodEnabled,
   }) {
     return GameSettings(
@@ -52,6 +56,7 @@ class GameSettings {
       difficulty: difficulty ?? this.difficulty,
       themeMode: themeMode ?? this.themeMode,
       soundEnabled: soundEnabled ?? this.soundEnabled,
+      hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       badFoodEnabled: badFoodEnabled ?? this.badFoodEnabled,
     );
   }
@@ -68,14 +73,23 @@ class GameSettings {
           difficulty == other.difficulty &&
           themeMode == other.themeMode &&
           soundEnabled == other.soundEnabled &&
+          hapticsEnabled == other.hapticsEnabled &&
           badFoodEnabled == other.badFoodEnabled;
 
   @override
   int get hashCode =>
-      boardWidth.hashCode ^ boardHeight.hashCode ^ baseSpeed.hashCode ^ wrapAround.hashCode ^ difficulty.hashCode ^ themeMode.hashCode ^ soundEnabled.hashCode ^ badFoodEnabled.hashCode;
+      boardWidth.hashCode ^
+      boardHeight.hashCode ^
+      baseSpeed.hashCode ^
+      wrapAround.hashCode ^
+      difficulty.hashCode ^
+      themeMode.hashCode ^
+      soundEnabled.hashCode ^
+      hapticsEnabled.hashCode ^
+      badFoodEnabled.hashCode;
 
   @override
   String toString() =>
-      'GameSettings(width: $boardWidth, height: $boardHeight, baseSpeed: $baseSpeed, wrap: $wrapAround, difficulty: $difficulty, theme: $themeMode, sound: $soundEnabled, badFood: $badFoodEnabled)';
+      'GameSettings(width: $boardWidth, height: $boardHeight, baseSpeed: $baseSpeed, wrap: $wrapAround, difficulty: $difficulty, theme: $themeMode, sound: $soundEnabled, haptics: $hapticsEnabled, badFood: $badFoodEnabled)';
 }
 

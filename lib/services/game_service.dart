@@ -28,7 +28,6 @@ class GameService {
       return Food(position: snake.head, points: 1, kind: FoodKind.apple, createdAtMs: DateTime.now().millisecondsSinceEpoch);
     }
 
-    final idx = _random.nextInt(available.length);
     final roll = _random.nextDouble();
 
     // Decide points and kind
@@ -45,7 +44,27 @@ class GameService {
       final normalKinds = [FoodKind.strawberry, FoodKind.banana, FoodKind.apple];
       kind = normalKinds[_random.nextInt(normalKinds.length)];
     }
-    return Food(position: available[idx], points: points, kind: kind, createdAtMs: DateTime.now().millisecondsSinceEpoch);
+
+    // Fairness tweak: avoid spawning bad food adjacent to the head when possible.
+    // This reduces “unavoidable shrink/death” moments on fast boards.
+    List<Position> candidates = available;
+    if (kind == FoodKind.bad) {
+      final head = snake.head;
+      final avoid = <Position>{
+        head,
+        Position(head.x + 1, head.y),
+        Position(head.x - 1, head.y),
+        Position(head.x, head.y + 1),
+        Position(head.x, head.y - 1),
+      };
+      final filtered = available.where((p) => !avoid.contains(p)).toList(growable: false);
+      if (filtered.isNotEmpty) {
+        candidates = filtered;
+      }
+    }
+
+    final idx = _random.nextInt(candidates.length);
+    return Food(position: candidates[idx], points: points, kind: kind, createdAtMs: DateTime.now().millisecondsSinceEpoch);
   }
 
   /// Calculates the score increase based on current snake length and difficulty

@@ -57,6 +57,11 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setHapticsEnabled(bool value) {
+    _settings = _settings.copyWith(hapticsEnabled: value);
+    notifyListeners();
+  }
+
   void setBadFoodEnabled(bool value) {
     _settings = _settings.copyWith(badFoodEnabled: value);
     notifyListeners();

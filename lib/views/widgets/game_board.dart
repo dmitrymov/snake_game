@@ -18,6 +18,7 @@ class _GameBoardState extends State<GameBoard> {
   bool _wasReady = false;
   double? _lastSizedWidth;
   double? _lastSizedHeight;
+  Brightness? _lastBrightness;
 
   @override
   void initState() {
@@ -28,55 +29,57 @@ class _GameBoardState extends State<GameBoard> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<GameViewModel>(
-      builder: (context, vm, _) {
-        return Container(
-          color: Colors.transparent,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // Size the board grid once per Ready state, right before starting a game.
-              return Consumer<GameViewModel>(
-                builder: (context, vm, _) {
-                  // Reset sizing flag when we re-enter Ready state
-                  if (vm.isReady && !_wasReady) {
-                    _sizedForThisReady = false;
-                    _lastSizedWidth = null;
-                    _lastSizedHeight = null;
-                  }
-                  _wasReady = vm.isReady;
+    // Only watch the "ready" flag; avoid rebuilding the board every tick.
+    final isReady = context.select<GameViewModel, bool>((vm) => vm.isReady);
 
-                  if (vm.isReady) {
-                    final cw = constraints.maxWidth;
-                    final ch = constraints.maxHeight;
-                    final constraintsChanged = (_lastSizedWidth != cw) || (_lastSizedHeight != ch);
-                    if (!_sizedForThisReady || constraintsChanged) {
-                      final desiredCellPx = 28.0;
-                      final wCells = (cw / desiredCellPx).floor().clamp(6, 80).toInt();
-                      final hCells = (ch / desiredCellPx).floor().clamp(6, 80).toInt();
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (!mounted) return;
-                        vm.updateBoardSizeIfNeeded(wCells, hCells);
-                      });
-                      _sizedForThisReady = true;
-                      _lastSizedWidth = cw;
-                      _lastSizedHeight = ch;
-                    }
-                  }
+    return Container(
+      color: Colors.transparent,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Reset sizing flag when we re-enter Ready state.
+          if (isReady && !_wasReady) {
+            _sizedForThisReady = false;
+            _lastSizedWidth = null;
+            _lastSizedHeight = null;
+          }
+          _wasReady = isReady;
 
-                  return SizedBox(
-                    width: constraints.maxWidth,
-                    height: constraints.maxHeight,
-                    child: GameWidget(
-                      key: ValueKey('game-${constraints.maxWidth}x${constraints.maxHeight}-${Theme.of(context).brightness}-${MediaQuery.of(context).orientation}'),
-                      game: _game!,
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        );
-      },
+          if (isReady) {
+            final cw = constraints.maxWidth;
+            final ch = constraints.maxHeight;
+            final constraintsChanged = (_lastSizedWidth != cw) || (_lastSizedHeight != ch);
+            if (!_sizedForThisReady || constraintsChanged) {
+              final desiredCellPx = 28.0;
+              final wCells = (cw / desiredCellPx).floor().clamp(6, 80).toInt();
+              final hCells = (ch / desiredCellPx).floor().clamp(6, 80).toInt();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                context.read<GameViewModel>().updateBoardSizeIfNeeded(wCells, hCells);
+              });
+              _sizedForThisReady = true;
+              _lastSizedWidth = cw;
+              _lastSizedHeight = ch;
+            }
+          }
+
+          // Recreate the widget only when brightness changes (prevents theme artifacts
+          // while avoiding rebuilds on every game tick).
+          final brightness = Theme.of(context).brightness;
+          final brightnessChanged = _lastBrightness != brightness;
+          _lastBrightness = brightness;
+
+          return SizedBox(
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+            child: GameWidget(
+              key: brightnessChanged
+                  ? ValueKey('game-${constraints.maxWidth}x${constraints.maxHeight}-$brightness-${MediaQuery.of(context).orientation}')
+                  : null,
+              game: _game!,
+            ),
+          );
+        },
+      ),
     );
   }
 }

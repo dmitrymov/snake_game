@@ -22,10 +22,13 @@ class GameViewModel extends ChangeNotifier {
   final HighScoreService _highScoreService = HighScoreService();
   final SettingsService _settingsService = SettingsService();
   final SoundService _soundService = SoundService();
+  Difficulty _difficulty = Difficulty.normal;
+  Direction? _pendingDirection;
   
   GameState _gameState = GameState.initial();
   Timer? _gameTimer;
   Timer? _badFoodTimer;
+  Timer? _effectsTimer;
 
   GameViewModel() {
     _loadHighScore();
@@ -43,6 +46,7 @@ class GameViewModel extends ChangeNotifier {
   int get score => _gameState.score;
   int get snakeLength => _gameState.snake.length;
 int get highScore => _gameState.highScore;
+  Difficulty get difficulty => _difficulty;
 
   // Transient eat particles for effects
   final List<EatParticle> _eatParticles = [];
@@ -57,8 +61,7 @@ int get highScore => _gameState.highScore;
     _stopGameTimer();
 
     // Generate obstacles based on difficulty and board size
-    final difficulty = _deriveDifficulty();
-    final obstacleCount = _computeObstacleCount(difficulty);
+    final obstacleCount = _computeObstacleCount(_difficulty);
     final obstacles = _gameService.generateObstacles(
       Snake.initial(boardWidth: _gameState.boardWidth, boardHeight: _gameState.boardHeight),
       _gameState.boardWidth,
@@ -66,7 +69,7 @@ int get highScore => _gameState.highScore;
       count: obstacleCount,
     );
     
-    final initialStatus = (difficulty == Difficulty.easy) ? GameStatus.playing : GameStatus.paused;
+    final initialStatus = (_difficulty == Difficulty.easy) ? GameStatus.playing : GameStatus.paused;
 
     _gameState = GameState.initial(
       boardWidth: _gameState.boardWidth,
@@ -81,13 +84,15 @@ int get highScore => _gameState.highScore;
     _generateFood();
 
     // For non-easy difficulty, show 3-2-1 countdown before starting
-    if (difficulty == Difficulty.easy) {
+    if (_difficulty == Difficulty.easy) {
       _startGameTimer();
     } else {
       _startResumeCountdown();
     }
 
     _eatParticles.clear();
+    _scorePopups.clear();
+    _pendingDirection = null;
     
     notifyListeners();
   }
@@ -142,6 +147,7 @@ int get highScore => _gameState.highScore;
   void resetGame() {
     _stopGameTimer();
     _cancelBadFoodTimer();
+    _stopEffectsTimerIfIdle();
     _gameState = GameState.initial(
       boardWidth: _gameState.boardWidth,
       boardHeight: _gameState.boardHeight,
@@ -152,6 +158,7 @@ int get highScore => _gameState.highScore;
     );
     _eatParticles.clear();
     _scorePopups.clear();
+    _pendingDirection = null;
     notifyListeners();
   }
 
@@ -163,8 +170,7 @@ int get highScore => _gameState.highScore;
 
     _stopGameTimer();
 
-    final difficulty = _deriveDifficulty();
-    final obstacleCount = _computeObstacleCount(difficulty, width: width, height: height);
+    final obstacleCount = _computeObstacleCount(_difficulty, width: width, height: height);
     final initialSnake = Snake.initial(boardWidth: width, boardHeight: height);
     final obstacles = _gameService.generateObstacles(
       initialSnake,
@@ -188,6 +194,7 @@ int get highScore => _gameState.highScore;
 
     _eatParticles.clear();
     _scorePopups.clear();
+    _pendingDirection = null;
 
     notifyListeners();
   }
@@ -203,11 +210,12 @@ int get highScore => _gameState.highScore;
 
     // Update sound toggle
     _soundService.setEnabled(settings.soundEnabled);
+    _soundService.setHapticsEnabled(settings.hapticsEnabled);
     _badFoodEnabled = settings.badFoodEnabled;
+    _difficulty = settings.difficulty;
 
     // Pre-generate obstacles to visualize density for new settings
-    final difficulty = settings.difficulty;
-    final obstacleCount = _computeObstacleCount(difficulty, width: bw, height: bh);
+    final obstacleCount = _computeObstacleCount(_difficulty, width: bw, height: bh);
     final initialSnake = Snake.initial(boardWidth: bw, boardHeight: bh);
     final obstacles = _gameService.generateObstacles(
       initialSnake,
@@ -229,22 +237,34 @@ int get highScore => _gameState.highScore;
     _scorePopups.clear();
     _cancelBadFoodTimer();
     _generateFood();
+    _pendingDirection = null;
     notifyListeners();
   }
 
   /// Changes the snake's direction
   void changeDirection(Direction direction) {
     if (!_gameState.isPlaying) return;
-    
-    final newSnake = _gameState.snake.changeDirection(direction);
-    _gameState = _gameState.copyWith(snake: newSnake);
-    notifyListeners();
+
+    // Buffer direction changes and apply once per tick for deterministic movement.
+    // Prevent reversing into itself by validating against the most recent intended direction.
+    final currentDir = _pendingDirection ?? _gameState.snake.direction;
+    if (direction == currentDir.opposite && _gameState.snake.length > 1) return;
+    if (direction == currentDir) return;
+    _pendingDirection = direction;
   }
 
 
   /// Handles game tick - moves snake and updates game state
   void _gameTick() {
     if (!_gameState.isPlaying) return;
+
+    // Apply buffered direction exactly once per tick.
+    if (_pendingDirection != null) {
+      _gameState = _gameState.copyWith(
+        snake: _gameState.snake.changeDirection(_pendingDirection!),
+      );
+      _pendingDirection = null;
+    }
 
     var newSnake = _gameState.snake;
     var newScore = _gameState.score;
@@ -277,12 +297,11 @@ int get highScore => _gameState.highScore;
     if (willEatFood) {
       // Snake grows and score increases
       _soundService.playEat();
-      final foodPoints = newFood!.points;
+      final foodPoints = newFood.points;
       final kind = foodPoints >= 2 ? 1 : (foodPoints < 0 ? -1 : 0);
       _spawnEatParticles(nextHeadPosition, kind);
-      final diff = _deriveDifficulty();
       if (foodPoints > 0) {
-        final inc = _gameService.calculateScoreIncrease(newScore, newSnake.length, diff);
+        final inc = _gameService.calculateScoreIncrease(newScore, newSnake.length, _difficulty);
         _spawnScorePopup(nextHeadPosition, inc);
         newSnake = newSnake.moveAndGrow(_gameState.boardWidth, _gameState.boardHeight);
         newScore += inc;
@@ -334,6 +353,9 @@ int get highScore => _gameState.highScore;
     // Update game speed based on score
     _updateGameSpeed();
 
+    // Prune transient effects (particles/popups)
+    _pruneEffects();
+
     notifyListeners();
   }
 
@@ -352,8 +374,7 @@ int get highScore => _gameState.highScore;
 
   /// Updates the game speed based on current score
   void _updateGameSpeed() {
-    final difficulty = _deriveDifficulty();
-    final newSpeed = _gameService.calculateGameSpeed(_gameState.score, _gameState.baseSpeed, difficulty);
+    final newSpeed = _gameService.calculateGameSpeed(_gameState.score, _gameState.baseSpeed, _difficulty);
     if (newSpeed != _gameState.gameSpeed) {
       _gameState = _gameState.copyWith(gameSpeed: newSpeed);
       _restartGameTimer();
@@ -393,11 +414,12 @@ int get highScore => _gameState.highScore;
 
     // Initialize sound toggle
     _soundService.setEnabled(s.soundEnabled);
+    _soundService.setHapticsEnabled(s.hapticsEnabled);
     _badFoodEnabled = s.badFoodEnabled;
+    _difficulty = s.difficulty;
 
     // Pre-generate obstacles using loaded settings
-    final difficulty = s.difficulty;
-    final obstacleCount = _computeObstacleCount(difficulty, width: s.boardWidth, height: s.boardHeight);
+    final obstacleCount = _computeObstacleCount(_difficulty, width: s.boardWidth, height: s.boardHeight);
     final initialSnake = Snake.initial(boardWidth: s.boardWidth, boardHeight: s.boardHeight);
     final obstacles = _gameService.generateObstacles(
       initialSnake,
@@ -415,6 +437,7 @@ int get highScore => _gameState.highScore;
       wrapAround: s.wrapAround,
       obstacles: obstacles,
     );
+    _pendingDirection = null;
     notifyListeners();
   }
 
@@ -446,20 +469,10 @@ int get highScore => _gameState.highScore;
   void dispose() {
     _stopGameTimer();
     _cancelBadFoodTimer();
+    _effectsTimer?.cancel();
+    _effectsTimer = null;
     _soundService.dispose();
     super.dispose();
-  }
-
-  Difficulty _deriveDifficulty() {
-    // We infer difficulty from settings by comparing baseSpeed and wrapAround is not relevant.
-    // Since GameState does not store difficulty explicitly, read current persisted settings again would be heavy.
-    // Instead, approximate by using SettingsService.getSettings? But that is async.
-    // We'll assume the last applied settings are represented by baseSpeed and that _loadSettings/applySettings used s.difficulty.
-    // To keep it simple, map baseSpeed to nearest preset when computing speed & obstacles.
-    final base = _gameState.baseSpeed;
-    if (base <= Difficulty.hard.suggestedBaseSpeed) return Difficulty.hard;
-    if (base >= Difficulty.easy.suggestedBaseSpeed) return Difficulty.easy;
-    return Difficulty.normal;
   }
 
   int _computeObstacleCount(Difficulty difficulty, {int? width, int? height}) {
@@ -488,13 +501,8 @@ int get highScore => _gameState.highScore;
         kind: kind,
       );
       _eatParticles.add(p);
-      // Schedule removal after 250ms
-      Timer(const Duration(milliseconds: 250), () {
-        _eatParticles.removeWhere((e) => e.id == p.id);
-        notifyListeners();
-      });
     }
-    notifyListeners();
+    _ensureEffectsTimer();
   }
 
   void _spawnScorePopup(Position origin, int value) {
@@ -507,11 +515,37 @@ int get highScore => _gameState.highScore;
       y: origin.y,
     );
     _scorePopups.add(popup);
-    Timer(const Duration(milliseconds: 450), () {
-      _scorePopups.removeWhere((p) => p.id == popup.id);
-      notifyListeners();
+    _ensureEffectsTimer();
+  }
+
+  void _ensureEffectsTimer() {
+    if (_effectsTimer != null) return;
+    _effectsTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      final changed = _pruneEffects();
+      if (changed) notifyListeners();
+      _stopEffectsTimerIfIdle();
     });
     notifyListeners();
+  }
+
+  bool _pruneEffects() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final beforeParticles = _eatParticles.length;
+    final beforePopups = _scorePopups.length;
+
+    // Particles live for ~250ms
+    _eatParticles.removeWhere((p) => (now - p.createdAtMs) >= 260);
+
+    // Popups live for their duration
+    _scorePopups.removeWhere((p) => (now - p.createdAtMs) >= p.durationMs);
+
+    return _eatParticles.length != beforeParticles || _scorePopups.length != beforePopups;
+  }
+
+  void _stopEffectsTimerIfIdle() {
+    if (_eatParticles.isNotEmpty || _scorePopups.isNotEmpty) return;
+    _effectsTimer?.cancel();
+    _effectsTimer = null;
   }
 
 }

@@ -278,7 +278,7 @@ class _GameScreenState extends State<GameScreen> {
 }
 
 class _ToolbarStats extends StatelessWidget {
-  const _ToolbarStats({super.key});
+  const _ToolbarStats();
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +307,7 @@ class _ToolbarStats extends StatelessWidget {
               const SizedBox(width: 10),
               _mini(icon: Icons.straighten, value: vm.snakeLength.toString(), color: Colors.green, style: textStyle),
               const SizedBox(width: 10),
-              Icon(Icons.circle, size: 8, color: iconColor.withOpacity(0.7)),
+              Icon(Icons.circle, size: 8, color: iconColor.withValues(alpha: 0.7)),
               const SizedBox(width: 8),
               Text(status, style: textStyle),
             ],

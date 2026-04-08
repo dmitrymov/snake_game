@@ -47,6 +47,7 @@ dependencies:
   # Rendering/game loop utilities
   flame: ^1.13.1
   dynamic_color: ^1.6.9
+  vector_math: ^2.2.0
 
 dev_dependencies:
   flutter_test:
