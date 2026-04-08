@@ -30,8 +30,6 @@ class SnakeFlameGame extends Game {
   final Paint _obstaclePaint = Paint()
     ..color = const Color(0xFF424242)
     ..style = PaintingStyle.fill;
-  final Paint _snakeHeadPaint = Paint()..color = const Color(0xFF8BC34A);
-  final Paint _snakeBodyPaint = Paint()..color = const Color(0xFF4CAF50);
   final Paint _eyeWhitePaint = Paint()..color = const Color(0xFFFFFFFF);
   final Paint _eyePupilPaint = Paint()..color = const Color(0xFF000000);
   final Paint _tonguePaint = Paint()..color = const Color(0xFFE53935);
@@ -74,12 +72,7 @@ class SnakeFlameGame extends Game {
 
     // Snake body
     final head = s.snake.head;
-    for (final seg in s.snake.body) {
-      final isHead = seg == head;
-      final r = Rect.fromLTWH(seg.x * cell, seg.y * cell, cell, cell).deflate(1);
-      final rr = RRect.fromRectAndRadius(r, Radius.circular(minC * 0.18));
-      canvas.drawRRect(rr, isHead ? _snakeHeadPaint : _snakeBodyPaint);
-    }
+    _drawSnakeNatural(canvas, s.snake.body, cell);
 
     // Head eyes and tongue
     _drawHeadDetail(canvas, head, s.snake.direction, cell);
@@ -269,6 +262,72 @@ class SnakeFlameGame extends Game {
         ..close();
       canvas.drawPath(path, _tonguePaint);
     }
+  }
+
+  void _drawSnakeNatural(Canvas canvas, List<Position> body, double cell) {
+    if (body.isEmpty) return;
+
+    final head = body.first;
+    final len = body.length;
+    final baseR = cell * 0.40;
+    final headR = cell * 0.46;
+    final tailR = cell * 0.28;
+
+    // Build stroke paths for contiguous (non-wrapping) parts of the snake.
+    // Using one stroke per contiguous section avoids the “blobby” look caused by
+    // stacking many circles + highlights.
+    _scratchPaint
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = const Color(0xFF43A047);
+
+    Path? path;
+    int pathStartIndex = 0;
+
+    void flushPath(int endIndexInclusive) {
+      if (path == null) return;
+      // Taper thickness by using the average index of this section.
+      final mid = ((pathStartIndex + endIndexInclusive) / 2.0) / (len - 1);
+      final r = ui.lerpDouble(headR, baseR, mid.clamp(0.0, 1.0)) ?? baseR;
+      _scratchPaint.strokeWidth = r * 2.0 * 0.92;
+      canvas.drawPath(path!, _scratchPaint);
+      path = null;
+    }
+
+    for (int i = 0; i < len; i++) {
+      final seg = body[i];
+      final p = Offset((seg.x + 0.5) * cell, (seg.y + 0.5) * cell);
+      if (path == null) {
+        pathStartIndex = i;
+        path = Path()..moveTo(p.dx, p.dy);
+      } else {
+        final prev = body[i - 1];
+        final dx = (seg.x - prev.x).abs();
+        final dy = (seg.y - prev.y).abs();
+        final isAdjacent = (dx + dy) == 1;
+        if (!isAdjacent) {
+          flushPath(i - 1);
+          pathStartIndex = i;
+          path = Path()..moveTo(p.dx, p.dy);
+        } else {
+          path!.lineTo(p.dx, p.dy);
+        }
+      }
+    }
+    flushPath(len - 1);
+
+    // Cap head and tail with circles for a clean silhouette.
+    _scratchPaint.style = PaintingStyle.fill;
+    final headCenter = Offset((head.x + 0.5) * cell, (head.y + 0.5) * cell);
+    final tail = body.last;
+    final tailCenter = Offset((tail.x + 0.5) * cell, (tail.y + 0.5) * cell);
+
+    _scratchPaint.color = const Color(0xFF66BB6A);
+    canvas.drawCircle(headCenter, headR, _scratchPaint);
+
+    _scratchPaint.color = const Color(0xFF2E7D32);
+    canvas.drawCircle(tailCenter, tailR, _scratchPaint);
   }
 }
 

@@ -115,8 +115,13 @@ class _GameScreenState extends State<GameScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Game action buttons (below the board)
-                    const GameActions(),
+                    // Reserve space for actions so board sizing stays stable.
+                    // (Otherwise the auto-fit board size changes when actions appear/disappear,
+                    // making the snake/food look bigger or smaller.)
+                    const SizedBox(
+                      height: 72,
+                      child: Center(child: GameActions()),
+                    ),
 
                     const SizedBox(height: 8),
 
