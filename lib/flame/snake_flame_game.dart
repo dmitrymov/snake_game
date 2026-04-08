@@ -25,6 +25,27 @@ class SnakeFlameGame extends Game {
   final Map<FoodKind, ui.Image?> _foodImgs = {};
   bool _loadingImages = false;
 
+  // Cached paints (avoid allocations in render loop)
+  final Paint _bgPaint = Paint()..color = const Color(0xFF000000);
+  final Paint _obstaclePaint = Paint()
+    ..color = const Color(0xFF424242)
+    ..style = PaintingStyle.fill;
+  final Paint _snakeHeadPaint = Paint()..color = const Color(0xFF8BC34A);
+  final Paint _snakeBodyPaint = Paint()..color = const Color(0xFF4CAF50);
+  final Paint _eyeWhitePaint = Paint()..color = const Color(0xFFFFFFFF);
+  final Paint _eyePupilPaint = Paint()..color = const Color(0xFF000000);
+  final Paint _tonguePaint = Paint()..color = const Color(0xFFE53935);
+  final Paint _scratchPaint = Paint();
+
+  // Cached inner-shadow paints (dependent on board size)
+  double? _shadowW;
+  double? _shadowH;
+  double? _shadowS;
+  Paint? _pTop;
+  Paint? _pBottom;
+  Paint? _pLeft;
+  Paint? _pRight;
+
   @override
   void render(Canvas canvas) {
     final s = vm.gameState;
@@ -42,36 +63,29 @@ class SnakeFlameGame extends Game {
     canvas.save();
     canvas.translate(dx, dy);
 
-    final bg = Paint()..color = const Color(0xFF000000);
-    canvas.drawRect(Rect.fromLTWH(0, 0, boardW, boardH), bg);
-
-    final now = DateTime.now().millisecondsSinceEpoch;
+    canvas.drawRect(Rect.fromLTWH(0, 0, boardW, boardH), _bgPaint);
 
     // Obstacles
-    final obPaint = Paint()
-      ..color = const Color(0xFF424242)
-      ..style = PaintingStyle.fill;
     for (final pos in s.obstacles) {
       final r = Rect.fromLTWH(pos.x * cell, pos.y * cell, cell, cell).deflate(1);
       final rr = RRect.fromRectAndRadius(r, Radius.circular(minC * 0.12));
-      canvas.drawRRect(rr, obPaint);
+      canvas.drawRRect(rr, _obstaclePaint);
     }
 
     // Snake body
     final head = s.snake.head;
     for (final seg in s.snake.body) {
       final isHead = seg == head;
-      final segPaint = Paint()
-        ..color = isHead ? const Color(0xFF8BC34A) : const Color(0xFF4CAF50);
       final r = Rect.fromLTWH(seg.x * cell, seg.y * cell, cell, cell).deflate(1);
       final rr = RRect.fromRectAndRadius(r, Radius.circular(minC * 0.18));
-      canvas.drawRRect(rr, segPaint);
+      canvas.drawRRect(rr, isHead ? _snakeHeadPaint : _snakeBodyPaint);
     }
 
     // Head eyes and tongue
     _drawHeadDetail(canvas, head, s.snake.direction, cell);
 
     // Floating score popups
+    final now = DateTime.now().millisecondsSinceEpoch;
     for (final pop in vm.scorePopups) {
       final t = ((now - pop.createdAtMs) / pop.durationMs).clamp(0.0, 1.0);
       final base = Offset((pop.x + 0.5) * cell, (pop.y + 0.5) * cell);
@@ -128,9 +142,7 @@ class SnakeFlameGame extends Game {
     for (final p in vm.eatParticles) {
       final center = Offset((p.origin.x + 0.5) * cell, (p.origin.y + 0.5) * cell);
       final lifeMs = 250.0;
-      final created = _createdAtMs(p);
-      if (created == null) continue; // should not happen
-      var t = ((now - created) / lifeMs).clamp(0.0, 1.0);
+      final t = ((now - p.createdAtMs) / lifeMs).clamp(0.0, 1.0);
       final dist = minC * 0.6;
       final dx = math.cos(p.angle) * dist * t;
       final dy = math.sin(p.angle) * dist * t;
@@ -145,9 +157,9 @@ class SnakeFlameGame extends Game {
       } else {
         cpart = color;
       }
-      final paint = Paint()..color = cpart.withAlpha(alpha);
+      _scratchPaint.color = cpart.withAlpha(alpha);
       final r = minC * (0.2 * (1.0 - 0.3 * t));
-      canvas.drawCircle(center.translate(dx, dy), r, paint);
+      canvas.drawCircle(center.translate(dx, dy), r, _scratchPaint);
     }
 
     // Inner shadow for board separation (subtle)
@@ -186,27 +198,22 @@ class SnakeFlameGame extends Game {
 
   void _drawInnerShadow(Canvas c, double w, double h) {
     final double s = math.max(4.0, math.min(w, h) * 0.02);
-    final List<Color> colors = [const Color(0x33000000), const Color(0x00000000)];
+    final needsRebuild = _shadowW != w || _shadowH != h || _shadowS != s || _pTop == null;
+    if (needsRebuild) {
+      _shadowW = w;
+      _shadowH = h;
+      _shadowS = s;
+      final List<Color> colors = [const Color(0x33000000), const Color(0x00000000)];
+      _pTop = Paint()..shader = ui.Gradient.linear(const Offset(0, 0), Offset(0, s), colors);
+      _pBottom = Paint()..shader = ui.Gradient.linear(Offset(0, h), Offset(0, h - s), colors);
+      _pLeft = Paint()..shader = ui.Gradient.linear(const Offset(0, 0), Offset(s, 0), colors);
+      _pRight = Paint()..shader = ui.Gradient.linear(Offset(w, 0), Offset(w - s, 0), colors);
+    }
 
-    // Top
-Paint pTop = Paint()
-      ..shader = ui.Gradient.linear(const Offset(0, 0), Offset(0, s), colors);
-    c.drawRect(Rect.fromLTWH(0, 0, w, s), pTop);
-
-    // Bottom
-Paint pBottom = Paint()
-      ..shader = ui.Gradient.linear(Offset(0, h), Offset(0, h - s), colors);
-    c.drawRect(Rect.fromLTWH(0, h - s, w, s), pBottom);
-
-    // Left
-Paint pLeft = Paint()
-      ..shader = ui.Gradient.linear(const Offset(0, 0), Offset(s, 0), colors);
-    c.drawRect(Rect.fromLTWH(0, 0, s, h), pLeft);
-
-    // Right
-Paint pRight = Paint()
-      ..shader = ui.Gradient.linear(Offset(w, 0), Offset(w - s, 0), colors);
-    c.drawRect(Rect.fromLTWH(w - s, 0, s, h), pRight);
+    c.drawRect(Rect.fromLTWH(0, 0, w, s), _pTop!);
+    c.drawRect(Rect.fromLTWH(0, h - s, w, s), _pBottom!);
+    c.drawRect(Rect.fromLTWH(0, 0, s, h), _pLeft!);
+    c.drawRect(Rect.fromLTWH(w - s, 0, s, h), _pRight!);
   }
 
   void _drawHeadDetail(Canvas canvas, Position head, Direction direction, double cell) {
@@ -240,13 +247,11 @@ Paint pRight = Paint()
 
     final eye1 = center + forward * eyeOffF + right * eyeOffL;
     final eye2 = center + forward * eyeOffF - right * eyeOffL;
-    final eyePaint = Paint()..color = const Color(0xFFFFFFFF);
-    final pupilPaint = Paint()..color = const Color(0xFF000000);
-    canvas.drawCircle(eye1, eyeR, eyePaint);
-    canvas.drawCircle(eye2, eyeR, eyePaint);
+    canvas.drawCircle(eye1, eyeR, _eyeWhitePaint);
+    canvas.drawCircle(eye2, eyeR, _eyeWhitePaint);
     final pupilF = cell * 0.05;
-    canvas.drawCircle(eye1 + forward * pupilF, pupilR, pupilPaint);
-    canvas.drawCircle(eye2 + forward * pupilF, pupilR, pupilPaint);
+    canvas.drawCircle(eye1 + forward * pupilF, pupilR, _eyePupilPaint);
+    canvas.drawCircle(eye2 + forward * pupilF, pupilR, _eyePupilPaint);
 
     // Tongue only when playing
     // Tongue flick cadence: 0.16s visible every 0.8s
@@ -262,18 +267,7 @@ Paint pRight = Paint()
         ..lineTo(baseL.dx, baseL.dy)
         ..lineTo(baseR.dx, baseR.dy)
         ..close();
-      final paint = Paint()..color = const Color(0xFFE53935);
-      canvas.drawPath(path, paint);
-    }
-  }
-
-  int? _createdAtMs(dynamic p) {
-    try {
-      // Ignore if not available
-      // We will add this field to particle model
-      return (p as dynamic).createdAtMs as int?;
-    } catch (_) {
-      return null;
+      canvas.drawPath(path, _tonguePaint);
     }
   }
 }
@@ -314,16 +308,23 @@ extension _FoodImages on SnakeFlameGame {
   void _maybeStartLoadImages() {
     if (_loadingImages) return;
     _loadingImages = true;
-    // Kick off async loads without awaiting; images will appear on subsequent frames
+    // Kick off async loads without awaiting; images will appear on subsequent frames.
+    // Ensure we only flip _loadingImages back once all attempted loads complete.
+    final futures = <Future<void>>[];
     for (final kind in FoodKind.values) {
       final path = kind.assetPath;
       if (path == null) continue;
-      _loadAssetImage(path).then((image) {
-        _foodImgs[kind] = image;
-      }).catchError((_) {}).whenComplete(() {
-        _loadingImages = false;
-      });
+      futures.add(
+        _loadAssetImage(path)
+            .then<void>((image) {
+              _foodImgs[kind] = image;
+            })
+            .catchError((_) {}),
+      );
     }
+    Future.wait(futures).whenComplete(() {
+      _loadingImages = false;
+    });
   }
 }
 
